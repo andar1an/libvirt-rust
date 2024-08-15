@@ -18,21 +18,50 @@
 
 use std::ffi::CString;
 use std::{mem, ptr, str};
-
 use uuid::Uuid;
 
 use crate::connect::Connect;
 use crate::domain_snapshot::DomainSnapshot;
+use crate::enumutil::{impl_enum, Enum};
 use crate::error::Error;
 use crate::stream::Stream;
 use crate::typedparams::{from_params, to_params};
 use crate::util::c_ulong_to_u64;
 use crate::{param_field_in, param_field_out};
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainState {
+    NoState,
+    Running,
+    Blocked,
+    Paused,
+    Shutdown,
+    Shutoff,
+    Crashed,
+    PMSuspended,
+}
+
+pub type DomainStateEnum = Enum<DomainState, sys::virDomainState>;
+
+impl_enum! {
+    enum: DomainState,
+    raw: sys::virDomainState,
+    match: {
+    sys::VIR_DOMAIN_NOSTATE => NoState,
+    sys::VIR_DOMAIN_RUNNING => Running,
+    sys::VIR_DOMAIN_BLOCKED => Blocked,
+    sys::VIR_DOMAIN_PAUSED => Paused,
+    sys::VIR_DOMAIN_SHUTDOWN => Shutdown,
+    sys::VIR_DOMAIN_SHUTOFF => Shutoff,
+    sys::VIR_DOMAIN_CRASHED => Crashed,
+    sys::VIR_DOMAIN_PMSUSPENDED => PMSuspended,
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct DomainInfo {
-    /// The running state, one of virDomainState.
-    pub state: sys::virDomainState,
+    /// The running state
+    pub state: DomainStateEnum,
     /// The maximum memory in KBytes allowed.
     pub max_mem: u64,
     /// The memory in KBytes used by the domain.
@@ -49,7 +78,7 @@ impl DomainInfo {
     /// The caller must ensure that the pointer is valid.
     pub unsafe fn from_ptr(ptr: sys::virDomainInfoPtr) -> DomainInfo {
         DomainInfo {
-            state: (*ptr).state as sys::virDomainState,
+            state: DomainStateEnum::from_raw((*ptr).state as sys::virDomainState),
             max_mem: c_ulong_to_u64((*ptr).maxMem),
             memory: c_ulong_to_u64((*ptr).memory),
             nr_virt_cpu: (*ptr).nrVirtCpu as u32,
@@ -840,14 +869,17 @@ impl Domain {
     ///
     /// Each state can be accompanied with a reason (if known) which
     /// led to the state.
-    pub fn get_state(&self) -> Result<(sys::virDomainState, i32), Error> {
+    pub fn get_state(&self) -> Result<(DomainStateEnum, i32), Error> {
         let mut state: libc::c_int = -1;
         let mut reason: libc::c_int = -1;
         let ret = unsafe { sys::virDomainGetState(self.as_ptr(), &mut state, &mut reason, 0) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok((state as sys::virDomainState, reason))
+        Ok((
+            DomainStateEnum::from_raw(state as sys::virDomainState),
+            reason,
+        ))
     }
 
     /// Get the public name of the domain.
@@ -1068,9 +1100,9 @@ impl Domain {
     /// `resume` to reactivate the domain.  This function may
     /// require privileged access.  Moreover, suspend may not be
     /// supported if domain is in some special state like
-    /// [`VIR_DOMAIN_PMSUSPENDED`].
+    /// [`PMSuspended`].
     ///
-    /// [`VIR_DOMAIN_PMSUSPENDED`]: sys::VIR_DOMAIN_PMSUSPENDED
+    /// [`PMSuspended`]: DomainState::PMSuspended
     pub fn suspend(&self) -> Result<u32, Error> {
         let ret = unsafe { sys::virDomainSuspend(self.as_ptr()) };
         if ret == -1 {
@@ -1084,10 +1116,10 @@ impl Domain {
     /// the process is restarted from the state where it was frozen by
     /// calling [`suspend()`]. This function may require privileged
     /// access Moreover, resume may not be supported if domain is in
-    /// some special state like ['VIR_DOMAIN_PMSUSPENDED'].
+    /// some special state like [`PMSuspended`].
     ///
     /// [`suspend()`]: Domain::suspend
-    /// [`VIR_DOMAIN_PMSUSPENDED`]: sys::VIR_DOMAIN_PMSUSPENDED
+    /// [`PMSuspended`]: DomainState::PMSuspended
     pub fn resume(&self) -> Result<u32, Error> {
         let ret = unsafe { sys::virDomainResume(self.as_ptr()) };
         if ret == -1 {

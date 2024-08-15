@@ -20,7 +20,7 @@ mod common;
 
 use uuid::Uuid;
 
-use virt::domain::{Domain, MemoryParameters, NUMAParameters, SchedulerInfo};
+use virt::domain::{Domain, DomainState, MemoryParameters, NUMAParameters, SchedulerInfo};
 use virt::error::ErrorNumber;
 use virt::sys;
 
@@ -90,7 +90,7 @@ fn test_get_xml_desc() {
 fn test_get_info() {
     fn t(dom: Domain) {
         match dom.get_info() {
-            Ok(info) => assert_eq!(1, info.state),
+            Ok(info) => assert!(info.state.is(DomainState::Running)),
             Err(_) => panic!("should have a node info"),
         }
     }
@@ -216,7 +216,7 @@ fn test_create_with_flags() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "create", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((sys::VIR_DOMAIN_RUNNING, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Running.into(), 1)), d.get_state());
     assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.get_name());
     common::clean_dom(d);
     common::close(c);
@@ -227,9 +227,9 @@ fn test_shutdown() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "shutdown", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((sys::VIR_DOMAIN_RUNNING, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Running.into(), 1)), d.get_state());
     assert_eq!(Ok(0), d.shutdown());
-    assert_eq!(Ok((sys::VIR_DOMAIN_SHUTOFF, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Shutoff.into(), 1)), d.get_state());
     common::clean_dom(d);
     common::close(c);
 }
@@ -239,11 +239,11 @@ fn test_pause_resume() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "pause_resume", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((sys::VIR_DOMAIN_RUNNING, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Running.into(), 1)), d.get_state());
     assert_eq!(Ok(0), d.suspend());
-    assert_eq!(Ok((sys::VIR_DOMAIN_PAUSED, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Paused.into(), 1)), d.get_state());
     assert_eq!(Ok(0), d.resume());
-    assert_eq!(Ok((sys::VIR_DOMAIN_RUNNING, 5)), d.get_state());
+    assert_eq!(Ok((DomainState::Running.into(), 5)), d.get_state());
     common::clean_dom(d);
     common::close(c);
 }
@@ -253,7 +253,7 @@ fn test_screenshot() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "screenshot", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((sys::VIR_DOMAIN_RUNNING, 1)), d.get_state());
+    assert_eq!(Ok((DomainState::Running.into(), 1)), d.get_state());
 
     let s = virt::stream::Stream::new(&c, 0).unwrap();
     assert_eq!(Ok(String::from("image/png")), d.screenshot(&s, 0, 0));
