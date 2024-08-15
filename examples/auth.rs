@@ -39,9 +39,8 @@
 
 use std::{env, io};
 
-use virt::connect::{Connect, ConnectAuth, ConnectCredential};
+use virt::connect::{Connect, ConnectAuth, ConnectCredential, ConnectCredentialType};
 use virt::error::clear_error_callback;
-use virt::sys;
 
 fn main() {
     clear_error_callback();
@@ -53,12 +52,12 @@ fn main() {
             let mut input = String::new();
 
             println!("{}:", cred.prompt);
-            match cred.typed as u32 {
-                sys::VIR_CRED_AUTHNAME => {
+            match cred.typed {
+                ConnectCredentialType::AuthName => {
                     io::stdin().read_line(&mut input).expect("");
                     cred.result = Some(String::from(input.trim()));
                 }
-                sys::VIR_CRED_PASSPHRASE => {
+                ConnectCredentialType::Passphrase => {
                     io::stdin().read_line(&mut input).expect("");
                     cred.result = Some(String::from(input.trim()));
                 }
@@ -69,7 +68,10 @@ fn main() {
         }
     }
     let mut auth = ConnectAuth::new(
-        vec![sys::VIR_CRED_AUTHNAME, sys::VIR_CRED_PASSPHRASE],
+        vec![
+            ConnectCredentialType::AuthName,
+            ConnectCredentialType::Passphrase,
+        ],
         callback,
     );
 

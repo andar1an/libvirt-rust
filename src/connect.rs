@@ -23,6 +23,7 @@ use std::{mem, ptr, str};
 use uuid::Uuid;
 
 use crate::domain::{Domain, DomainStatsRecord};
+use crate::enumutil::{impl_enum, RawEnum};
 use crate::error::Error;
 use crate::interface::Interface;
 use crate::network::Network;
@@ -104,7 +105,7 @@ pub type ConnectAuthCallback = fn(creds: &mut Vec<ConnectCredential>);
 #[derive(Clone, Debug)]
 pub struct ConnectCredential {
     /// One of `ConnectCredentialType` constants
-    pub typed: i32,
+    pub typed: ConnectCredentialType,
     /// Prompt to show to user.
     pub prompt: String,
     /// Additional challenge to show.
@@ -125,7 +126,10 @@ impl ConnectCredential {
             default = c_chars_to_string!((*cred).defresult, nofree);
         }
         ConnectCredential {
-            typed: (*cred).type_,
+            // unwrap() will not fail because the cred type must
+            // be one of those declared in 'ConnectAuth'
+            typed: ConnectCredentialType::from_raw((*cred).type_ as sys::virConnectCredentialType)
+                .unwrap(),
             prompt: c_chars_to_string!((*cred).prompt, nofree),
             challenge: c_chars_to_string!((*cred).challenge, nofree),
             def_result: default,
@@ -134,18 +138,44 @@ impl ConnectCredential {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum ConnectCredentialType {
+    UserName,
+    AuthName,
+    Language,
+    CNonce,
+    Passphrase,
+    EchoPrompt,
+    NoEchoPrompt,
+    Realm,
+    External,
+}
+
+impl_enum! {
+    enum: ConnectCredentialType,
+    raw: sys::virConnectCredentialType,
+    match: {
+        sys::VIR_CRED_USERNAME => UserName,
+        sys::VIR_CRED_AUTHNAME => AuthName,
+        sys::VIR_CRED_LANGUAGE => Language,
+        sys::VIR_CRED_CNONCE => CNonce,
+        sys::VIR_CRED_PASSPHRASE => Passphrase,
+        sys::VIR_CRED_ECHOPROMPT => EchoPrompt,
+        sys::VIR_CRED_NOECHOPROMPT => NoEchoPrompt,
+        sys::VIR_CRED_REALM => Realm,
+        sys::VIR_CRED_EXTERNAL => External,
+    }
+}
+
 pub struct ConnectAuth {
     /// List of supported `ConnectCredentialType` values.
-    creds: Vec<sys::virConnectCredentialType>,
+    creds: Vec<ConnectCredentialType>,
     /// Callback used to collect credentials.
     callback: ConnectAuthCallback,
 }
 
 impl ConnectAuth {
-    pub fn new(
-        creds: Vec<sys::virConnectCredentialType>,
-        callback: ConnectAuthCallback,
-    ) -> ConnectAuth {
+    pub fn new(creds: Vec<ConnectCredentialType>, callback: ConnectAuthCallback) -> ConnectAuth {
         ConnectAuth { creds, callback }
     }
 }
@@ -294,12 +324,16 @@ impl Connect {
         auth: &mut ConnectAuth,
         flags: sys::virConnectFlags,
     ) -> Result<Connect, Error> {
+        let mut ccreds: Vec<sys::virConnectCredentialType> = Vec::new();
+        for x in 0..auth.creds.len() {
+            ccreds.push(auth.creds[x].to_raw())
+        }
         let mut cauth =
             // Safe because Rust forces to allocate all attributes of
             // the struct ConnectAuth.
             sys::virConnectAuth {
-                credtype: auth.creds.as_mut_ptr() as *mut libc::c_int,
-                ncredtype: auth.creds.len() as libc::c_uint,
+                credtype: ccreds.as_mut_ptr() as *mut libc::c_int,
+                ncredtype: ccreds.len() as libc::c_uint,
                 cb: Some(connect_callback),
                 cbdata: auth.callback as *mut _,
         };

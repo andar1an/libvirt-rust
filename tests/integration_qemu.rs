@@ -21,7 +21,7 @@
 
 mod common;
 
-use virt::connect::{Connect, ConnectAuth, ConnectCredential};
+use virt::connect::{Connect, ConnectAuth, ConnectCredential, ConnectCredentialType};
 use virt::domain::{DomainRunningReason, DomainState, DomainStateReason};
 use virt::sys;
 
@@ -100,11 +100,11 @@ fn test_create_storage_pool_and_vols() {
 fn test_connection_with_auth() {
     fn callback(creds: &mut Vec<ConnectCredential>) {
         for cred in creds {
-            match cred.typed as u32 {
-                sys::VIR_CRED_AUTHNAME => {
+            match cred.typed {
+                ConnectCredentialType::AuthName => {
                     cred.result = Some(String::from("user"));
                 }
-                sys::VIR_CRED_PASSPHRASE => {
+                ConnectCredentialType::Passphrase => {
                     cred.result = Some(String::from("pass"));
                 }
                 _ => {
@@ -115,7 +115,10 @@ fn test_connection_with_auth() {
     }
 
     let mut auth = ConnectAuth::new(
-        vec![sys::VIR_CRED_AUTHNAME, sys::VIR_CRED_PASSPHRASE],
+        vec![
+            ConnectCredentialType::AuthName,
+            ConnectCredentialType::Passphrase,
+        ],
         callback,
     );
     let c = Connect::open_auth(Some("test+tcp://127.0.0.1/default"), &mut auth, 0);
@@ -128,11 +131,11 @@ fn test_connection_with_auth() {
 fn test_connection_with_auth_wrong() {
     fn callback(creds: &mut Vec<ConnectCredential>) {
         for cred in creds {
-            match cred.typed as u32 {
-                sys::VIR_CRED_AUTHNAME => {
+            match cred.typed {
+                ConnectCredentialType::AuthName => {
                     cred.result = Some(String::from("user"));
                 }
-                sys::VIR_CRED_PASSPHRASE => {
+                ConnectCredentialType::Passphrase => {
                     cred.result = Some(String::from("passwrong"));
                 }
                 _ => {
@@ -143,7 +146,10 @@ fn test_connection_with_auth_wrong() {
     }
 
     let mut auth = ConnectAuth::new(
-        vec![sys::VIR_CRED_AUTHNAME, sys::VIR_CRED_PASSPHRASE],
+        vec![
+            ConnectCredentialType::AuthName,
+            ConnectCredentialType::Passphrase,
+        ],
         callback,
     );
     let c = Connect::open_auth(Some("test+tcp://127.0.0.1/default"), &mut auth, 0);
