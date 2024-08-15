@@ -1,3 +1,8 @@
+pub trait RawEnum<I>: Sized {
+    fn from_raw(raw: I) -> Option<Self>;
+    fn to_raw(self) -> I;
+}
+
 macro_rules! impl_enum {
     (enum: $type:ty, raw: $raw:ty, match: { $($match_arms:tt)* }) => {
         impl std::fmt::Display for $type {
@@ -6,18 +11,18 @@ macro_rules! impl_enum {
             }
         }
 
-        impl $type {
+        impl $crate::enumutil::RawEnum<$raw> for $type {
             /// Converts libvirt C enum constant to Rust enum.
-            pub fn from_raw(raw: $raw) -> Option<Self> {
+            fn from_raw(raw: $raw) -> Option<Self> {
                 $crate::enumutil::impl_enum_from!(raw, $($match_arms)*)
             }
 
             /// Converts Rust enum to libvirt C enum constant.
-            pub fn to_raw(self) -> $raw {
+            fn to_raw(self) -> $raw {
                 $crate::enumutil::impl_enum_to!(self, $($match_arms)*)
             }
         }
-    };
+    }
 }
 
 macro_rules! impl_enum_display {

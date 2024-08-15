@@ -137,13 +137,13 @@ macro_rules! typed_params_release_c_chars {
     };
 }
 
-mod enumutil;
 mod typedparams;
 mod util;
 
 pub mod connect;
 pub mod domain;
 pub mod domain_snapshot;
+pub mod enumutil;
 pub mod error;
 pub mod event;
 pub mod interface;
