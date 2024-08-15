@@ -273,6 +273,7 @@ fn test_metadata() {
         d.get_metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
             .unwrap_err()
             .code()
+            .unwrap()
     );
 
     assert_eq!(
@@ -305,6 +306,7 @@ fn test_metadata() {
         d.get_metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
             .unwrap_err()
             .code()
+            .unwrap()
     );
 
     assert_eq!(
@@ -312,6 +314,7 @@ fn test_metadata() {
         d.get_metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
             .unwrap_err()
             .code()
+            .unwrap()
     );
 
     assert_eq!(
@@ -338,6 +341,7 @@ fn test_metadata() {
         d.get_metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
             .unwrap_err()
             .code()
+            .unwrap()
     );
 
     let xmldoc = "<location>\n  <planet>mars</planet>\n</location>";
@@ -349,6 +353,7 @@ fn test_metadata() {
         d.get_metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
             .unwrap_err()
             .code()
+            .unwrap()
     );
 
     assert_eq!(
@@ -381,6 +386,7 @@ fn test_metadata() {
         d.get_metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
             .unwrap_err()
             .code()
+            .unwrap()
     );
 
     common::clean_dom(d);

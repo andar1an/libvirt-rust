@@ -115,8 +115,8 @@ fn test_domain_capabilities() {
         ),
         Err(e) => assert!(
             e.level() == virt::error::ErrorLevel::Error
-                && e.code() == virt::error::ErrorNumber::NoSupport
-                && e.domain() == virt::error::ErrorDomain::Domain,
+                && e.code().is(virt::error::ErrorNumber::NoSupport)
+                && e.domain().is(virt::error::ErrorDomain::Domain),
             "Unexpected error"
         ),
     }

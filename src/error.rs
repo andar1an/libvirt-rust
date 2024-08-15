@@ -20,7 +20,7 @@ use std::error::Error as StdError;
 use std::ffi::CStr;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
-use crate::enumutil::{impl_enum, RawEnum};
+use crate::enumutil::{impl_enum, Enum, RawEnum};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 /// The level of an error.
@@ -195,6 +195,8 @@ pub enum ErrorDomain {
     /// Error from Cloud Hypervisor driver
     Ch,
 }
+
+pub type ErrorDomainEnum = Enum<ErrorDomain, sys::virErrorDomain>;
 
 impl_enum! {
     enum: ErrorDomain,
@@ -510,6 +512,8 @@ pub enum ErrorNumber {
     AgentCommandFailed,
 }
 
+pub type ErrorNumberEnum = Enum<ErrorNumber, sys::virErrorNumber>;
+
 impl_enum! {
     enum: ErrorNumber,
     raw: sys::virErrorNumber,
@@ -636,8 +640,8 @@ impl_enum! {
 /// See <https://libvirt.org/html/libvirt-virterror.html>
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Error {
-    code: ErrorNumber,
-    domain: ErrorDomain,
+    code: ErrorNumberEnum,
+    domain: ErrorDomainEnum,
     message: String,
     level: ErrorLevel,
 }
@@ -653,8 +657,8 @@ impl Error {
         let ptr: sys::virErrorPtr = unsafe { sys::virGetLastError() };
         if ptr.is_null() {
             Error {
-                code: ErrorNumber::InternalError,
-                domain: ErrorDomain::None,
+                code: ErrorNumberEnum::from(ErrorNumber::InternalError),
+                domain: ErrorDomainEnum::from(ErrorDomain::None),
                 message: "an unknown libvirt error occurred".into(),
                 level: ErrorLevel::Error,
             }
@@ -664,10 +668,8 @@ impl Error {
     }
 
     unsafe fn from_raw(ptr: sys::virErrorPtr) -> Error {
-        let code = ErrorNumber::from_raw((*ptr).code as sys::virErrorNumber)
-            .unwrap_or(ErrorNumber::InternalError);
-        let domain = ErrorDomain::from_raw((*ptr).domain as sys::virErrorDomain)
-            .unwrap_or(ErrorDomain::None);
+        let code = ErrorNumberEnum::from_raw((*ptr).code as sys::virErrorNumber);
+        let domain = ErrorDomainEnum::from_raw((*ptr).domain as sys::virErrorDomain);
         let message = CStr::from_ptr((*ptr).message)
             .to_string_lossy()
             .into_owned();
@@ -680,13 +682,12 @@ impl Error {
         }
     }
 
-    /// Returns the exact error code.
-    pub fn code(&self) -> ErrorNumber {
+    pub fn code(&self) -> ErrorNumberEnum {
         self.code
     }
 
     /// Returns the source of the error.
-    pub fn domain(&self) -> ErrorDomain {
+    pub fn domain(&self) -> ErrorDomainEnum {
         self.domain
     }
 
@@ -718,8 +719,8 @@ impl StdError for Error {}
 impl From<std::ffi::NulError> for Error {
     fn from(nulerr: std::ffi::NulError) -> Self {
         Error {
-            code: ErrorNumber::InvalidArg,
-            domain: ErrorDomain::None,
+            code: ErrorNumberEnum::from(ErrorNumber::InvalidArg),
+            domain: ErrorDomainEnum::from(ErrorDomain::None),
             message: format!("Null byte passed to CString: {nulerr}"),
             level: ErrorLevel::Error,
         }
