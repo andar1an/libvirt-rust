@@ -79,14 +79,14 @@ mod tests {
     const BAZ: u32 = 2;
 
     #[derive(Debug, PartialEq, Clone, Copy)]
-    enum WithoutLast {
+    enum Example {
         Foo,
         Bar,
         Baz,
     }
 
     impl_enum! {
-        enum: WithoutLast,
+        enum: Example,
         raw: u32,
         match: {
             FOO => Foo,
@@ -96,25 +96,25 @@ mod tests {
     }
 
     #[test]
-    fn test_enum_without_last_from_raw() {
+    fn test_enum_from_raw() {
         let inputs = [
-            (FOO, Some(WithoutLast::Foo)),
-            (BAR, Some(WithoutLast::Bar)),
-            (BAZ, Some(WithoutLast::Baz)),
+            (FOO, Some(Example::Foo)),
+            (BAR, Some(Example::Bar)),
+            (BAZ, Some(Example::Baz)),
             (10, None),
         ];
 
         for &(raw, expected) in inputs.iter() {
-            assert_eq!(WithoutLast::from_raw(raw), expected);
+            assert_eq!(Example::from_raw(raw), expected);
         }
     }
 
     #[test]
-    fn test_enum_without_last_to_raw() {
+    fn test_enum_to_raw() {
         let inputs = [
-            (WithoutLast::Foo, FOO, "foo"),
-            (WithoutLast::Bar, BAR, "bar"),
-            (WithoutLast::Baz, BAZ, "baz"),
+            (Example::Foo, FOO, "foo"),
+            (Example::Bar, BAR, "bar"),
+            (Example::Baz, BAZ, "baz"),
         ];
 
         for &(variant, expected, estr) in inputs.iter() {
