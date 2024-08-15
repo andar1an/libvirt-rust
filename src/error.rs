@@ -643,10 +643,10 @@ impl_enum! {
 /// See <https://libvirt.org/html/libvirt-virterror.html>
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Error {
-    code: sys::virErrorNumber,
-    domain: sys::virErrorDomain,
+    code: ErrorNumber,
+    domain: ErrorDomain,
     message: String,
-    level: sys::virErrorLevel,
+    level: ErrorLevel,
 }
 
 extern "C" fn noop(_data: *mut libc::c_void, _error: sys::virErrorPtr) {}
@@ -660,10 +660,10 @@ impl Error {
         let ptr: sys::virErrorPtr = unsafe { sys::virGetLastError() };
         if ptr.is_null() {
             Error {
-                code: sys::VIR_ERR_INTERNAL_ERROR,
-                domain: sys::VIR_FROM_NONE,
+                code: ErrorNumber::InternalError,
+                domain: ErrorDomain::None,
                 message: "an unknown libvirt error occurred".into(),
-                level: sys::VIR_ERR_ERROR,
+                level: ErrorLevel::Error,
             }
         } else {
             unsafe { Error::from_raw(ptr) }
@@ -671,12 +671,12 @@ impl Error {
     }
 
     unsafe fn from_raw(ptr: sys::virErrorPtr) -> Error {
-        let code = (*ptr).code as sys::virErrorNumber;
-        let domain = (*ptr).domain as sys::virErrorDomain;
+        let code = ErrorNumber::from_raw((*ptr).code as sys::virErrorNumber);
+        let domain = ErrorDomain::from_raw((*ptr).domain as sys::virErrorDomain);
         let message = CStr::from_ptr((*ptr).message)
             .to_string_lossy()
             .into_owned();
-        let level = (*ptr).level;
+        let level = ErrorLevel::from_raw((*ptr).level);
         Error {
             code,
             domain,
@@ -687,12 +687,12 @@ impl Error {
 
     /// Returns the exact error code.
     pub fn code(&self) -> ErrorNumber {
-        ErrorNumber::from_raw(self.code)
+        self.code
     }
 
     /// Returns the source of the error.
     pub fn domain(&self) -> ErrorDomain {
-        ErrorDomain::from_raw(self.domain)
+        self.domain
     }
 
     /// Returns the error message.
@@ -702,7 +702,7 @@ impl Error {
 
     /// Returns the error level.
     pub fn level(&self) -> ErrorLevel {
-        ErrorLevel::from_raw(self.level)
+        self.level
     }
 }
 
@@ -723,10 +723,10 @@ impl StdError for Error {}
 impl From<std::ffi::NulError> for Error {
     fn from(nulerr: std::ffi::NulError) -> Self {
         Error {
-            code: ErrorNumber::InvalidArg as u32,
-            domain: ErrorDomain::None as u32,
+            code: ErrorNumber::InvalidArg,
+            domain: ErrorDomain::None,
             message: format!("Null byte passed to CString: {nulerr}"),
-            level: ErrorLevel::Error as u32,
+            level: ErrorLevel::Error,
         }
     }
 }
@@ -742,9 +742,9 @@ impl Display for Error {
             "{} [code={} ({}), domain={} ({})]",
             self.message,
             self.code(),
-            self.code,
+            self.code().to_raw(),
             self.domain(),
-            self.domain,
+            self.domain().to_raw(),
         )
     }
 }
