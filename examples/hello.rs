@@ -62,7 +62,11 @@ fn show_domains(conn: &Connect) -> Result<(), Error> {
                     println!("ID: {id}, Name: {name}, Active: {active}");
                     if let Ok(dinfo) = dom.get_info() {
                         println!("Domain info:");
-                        println!("    State: {}", dinfo.state);
+                        if let Ok(state) = dom.get_state() {
+                            println!("    State: {} ({})", state.0, state.1);
+                        } else {
+                            println!("    State: {}", dinfo.state);
+                        }
                         println!("    Max Memory: {}", dinfo.max_mem);
                         println!("    Memory: {}", dinfo.memory);
                         println!("    CPUs: {}", dinfo.nr_virt_cpu);

@@ -17,6 +17,7 @@
  */
 
 use std::ffi::CString;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::{mem, ptr, str};
 use uuid::Uuid;
 
@@ -55,6 +56,226 @@ impl_enum! {
     sys::VIR_DOMAIN_SHUTOFF => Shutoff,
     sys::VIR_DOMAIN_CRASHED => Crashed,
     sys::VIR_DOMAIN_PMSUSPENDED => PMSuspended,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainNoStateReason {
+    Unknown,
+}
+
+pub type DomainNoStateReasonEnum = Enum<DomainNoStateReason, sys::virDomainNostateReason>;
+
+impl_enum! {
+    enum: DomainNoStateReason,
+    raw: sys::virDomainNostateReason,
+    match: {
+    sys::VIR_DOMAIN_NOSTATE_UNKNOWN => Unknown,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainRunningReason {
+    Unknown,
+    Booted,
+    Migrated,
+    Restored,
+    FromSnapshot,
+    Unpaused,
+    MigrationCancelled,
+    SaveCancelled,
+    Wakeup,
+    Crashed,
+    PostCopy,
+    PostCopyFailed,
+}
+
+pub type DomainRunningReasonEnum = Enum<DomainRunningReason, sys::virDomainRunningReason>;
+
+impl_enum! {
+    enum: DomainRunningReason,
+    raw: sys::virDomainRunningReason,
+    match: {
+    sys::VIR_DOMAIN_RUNNING_UNKNOWN => Unknown,
+    sys::VIR_DOMAIN_RUNNING_BOOTED => Booted,
+    sys::VIR_DOMAIN_RUNNING_MIGRATED => Migrated,
+    sys::VIR_DOMAIN_RUNNING_RESTORED => Restored,
+    sys::VIR_DOMAIN_RUNNING_FROM_SNAPSHOT => FromSnapshot,
+    sys::VIR_DOMAIN_RUNNING_UNPAUSED => Unpaused,
+    sys::VIR_DOMAIN_RUNNING_MIGRATION_CANCELED => MigrationCancelled,
+    sys::VIR_DOMAIN_RUNNING_SAVE_CANCELED => SaveCancelled,
+    sys::VIR_DOMAIN_RUNNING_WAKEUP => Wakeup,
+    sys::VIR_DOMAIN_RUNNING_CRASHED => Crashed,
+    sys::VIR_DOMAIN_RUNNING_POSTCOPY => PostCopy,
+    sys::VIR_DOMAIN_RUNNING_POSTCOPY_FAILED => PostCopyFailed,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainBlockedReason {
+    Unknown,
+}
+
+pub type DomainBlockedReasonEnum = Enum<DomainBlockedReason, sys::virDomainBlockedReason>;
+
+impl_enum! {
+    enum: DomainBlockedReason,
+    raw: sys::virDomainBlockedReason,
+    match: {
+    sys::VIR_DOMAIN_BLOCKED_UNKNOWN => Unknown,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainPausedReason {
+    Unknown,
+    User,
+    Migration,
+    Save,
+    Dump,
+    IOError,
+    Watchdog,
+    FromSnapshot,
+    ShuttingDown,
+    Snapshot,
+    Crashed,
+    StartingUp,
+    PostCopy,
+    PostCopyFailed,
+    APIError,
+}
+
+pub type DomainPausedReasonEnum = Enum<DomainPausedReason, sys::virDomainPausedReason>;
+
+impl_enum! {
+    enum: DomainPausedReason,
+    raw: sys::virDomainPausedReason,
+    match: {
+    sys::VIR_DOMAIN_PAUSED_UNKNOWN => Unknown,
+    sys::VIR_DOMAIN_PAUSED_USER => User,
+    sys::VIR_DOMAIN_PAUSED_MIGRATION => Migration,
+    sys::VIR_DOMAIN_PAUSED_SAVE => Save,
+    sys::VIR_DOMAIN_PAUSED_DUMP => Dump,
+    sys::VIR_DOMAIN_PAUSED_IOERROR => IOError,
+    sys::VIR_DOMAIN_PAUSED_WATCHDOG => Watchdog,
+    sys::VIR_DOMAIN_PAUSED_FROM_SNAPSHOT => FromSnapshot,
+    sys::VIR_DOMAIN_PAUSED_SHUTTING_DOWN => ShuttingDown,
+    sys::VIR_DOMAIN_PAUSED_SNAPSHOT => Snapshot,
+    sys::VIR_DOMAIN_PAUSED_CRASHED => Crashed,
+    sys::VIR_DOMAIN_PAUSED_STARTING_UP => StartingUp,
+    sys::VIR_DOMAIN_PAUSED_POSTCOPY => PostCopy,
+    sys::VIR_DOMAIN_PAUSED_POSTCOPY_FAILED => PostCopyFailed,
+    sys::VIR_DOMAIN_PAUSED_API_ERROR => APIError,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainShutdownReason {
+    Unknown,
+    User,
+}
+
+pub type DomainShutdownReasonEnum = Enum<DomainShutdownReason, sys::virDomainShutdownReason>;
+
+impl_enum! {
+    enum: DomainShutdownReason,
+    raw: sys::virDomainShutdownReason,
+    match: {
+    sys::VIR_DOMAIN_SHUTDOWN_UNKNOWN => Unknown,
+    sys::VIR_DOMAIN_SHUTDOWN_USER => User,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainShutoffReason {
+    Unknown,
+    Shutdown,
+    Destroyed,
+    Crashed,
+    Migrated,
+    Saved,
+    Failed,
+    FromSnapshot,
+    Daemon,
+}
+
+pub type DomainShutoffReasonEnum = Enum<DomainShutoffReason, sys::virDomainShutoffReason>;
+
+impl_enum! {
+    enum: DomainShutoffReason,
+    raw: sys::virDomainShutoffReason,
+    match: {
+    sys::VIR_DOMAIN_SHUTOFF_UNKNOWN => Unknown,
+    sys::VIR_DOMAIN_SHUTOFF_SHUTDOWN => Shutdown,
+    sys::VIR_DOMAIN_SHUTOFF_DESTROYED => Destroyed,
+    sys::VIR_DOMAIN_SHUTOFF_CRASHED => Crashed,
+    sys::VIR_DOMAIN_SHUTOFF_MIGRATED => Migrated,
+    sys::VIR_DOMAIN_SHUTOFF_SAVED => Saved,
+    sys::VIR_DOMAIN_SHUTOFF_FAILED => Failed,
+    sys::VIR_DOMAIN_SHUTOFF_FROM_SNAPSHOT => FromSnapshot,
+    sys::VIR_DOMAIN_SHUTOFF_DAEMON => Daemon,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainCrashedReason {
+    Unknown,
+    Panicked,
+}
+
+pub type DomainCrashedReasonEnum = Enum<DomainCrashedReason, sys::virDomainCrashedReason>;
+
+impl_enum! {
+    enum: DomainCrashedReason,
+    raw: sys::virDomainCrashedReason,
+    match: {
+    sys::VIR_DOMAIN_CRASHED_UNKNOWN => Unknown,
+    sys::VIR_DOMAIN_CRASHED_PANICKED => Panicked,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum DomainPMSuspendedReason {
+    Unknown,
+}
+
+pub type DomainPMSuspendedReasonEnum =
+    Enum<DomainPMSuspendedReason, sys::virDomainPMSuspendedReason>;
+
+impl_enum! {
+    enum: DomainPMSuspendedReason,
+    raw: sys::virDomainPMSuspendedReason,
+    match: {
+    sys::VIR_DOMAIN_PMSUSPENDED_UNKNOWN => Unknown,
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum DomainStateReason {
+    NoState(DomainNoStateReasonEnum),
+    Running(DomainRunningReasonEnum),
+    Blocked(DomainBlockedReasonEnum),
+    Paused(DomainPausedReasonEnum),
+    Shutdown(DomainShutdownReasonEnum),
+    Shutoff(DomainShutoffReasonEnum),
+    Crashed(DomainCrashedReasonEnum),
+    PMSuspended(DomainPMSuspendedReasonEnum),
+}
+
+pub type DomainStateReasonEnum = Enum<DomainStateReason, libc::c_int>;
+
+impl Display for DomainStateReason {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        match self {
+            DomainStateReason::NoState(r) => write!(f, "{}", r),
+            DomainStateReason::Running(r) => write!(f, "{}", r),
+            DomainStateReason::Blocked(r) => write!(f, "{}", r),
+            DomainStateReason::Paused(r) => write!(f, "{}", r),
+            DomainStateReason::Shutdown(r) => write!(f, "{}", r),
+            DomainStateReason::Shutoff(r) => write!(f, "{}", r),
+            DomainStateReason::Crashed(r) => write!(f, "{}", r),
+            DomainStateReason::PMSuspended(r) => write!(f, "{}", r),
+        }
     }
 }
 
@@ -869,17 +1090,46 @@ impl Domain {
     ///
     /// Each state can be accompanied with a reason (if known) which
     /// led to the state.
-    pub fn get_state(&self) -> Result<(DomainStateEnum, i32), Error> {
+    pub fn get_state(&self) -> Result<(DomainStateEnum, DomainStateReasonEnum), Error> {
         let mut state: libc::c_int = -1;
         let mut reason: libc::c_int = -1;
         let ret = unsafe { sys::virDomainGetState(self.as_ptr(), &mut state, &mut reason, 0) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok((
-            DomainStateEnum::from_raw(state as sys::virDomainState),
-            reason,
-        ))
+        let state = DomainStateEnum::from_raw(state as sys::virDomainState);
+        let reason = match state {
+            Enum::Known(k) => DomainStateReasonEnum::Known(match k {
+                DomainState::NoState => DomainStateReason::NoState(
+                    DomainNoStateReasonEnum::from_raw(reason as sys::virDomainNostateReason),
+                ),
+                DomainState::Running => DomainStateReason::Running(
+                    DomainRunningReasonEnum::from_raw(reason as sys::virDomainRunningReason),
+                ),
+                DomainState::Blocked => DomainStateReason::Blocked(
+                    DomainBlockedReasonEnum::from_raw(reason as sys::virDomainBlockedReason),
+                ),
+                DomainState::Paused => DomainStateReason::Paused(DomainPausedReasonEnum::from_raw(
+                    reason as sys::virDomainPausedReason,
+                )),
+                DomainState::Shutdown => DomainStateReason::Shutdown(
+                    DomainShutdownReasonEnum::from_raw(reason as sys::virDomainShutdownReason),
+                ),
+                DomainState::Shutoff => DomainStateReason::Shutoff(
+                    DomainShutoffReasonEnum::from_raw(reason as sys::virDomainShutoffReason),
+                ),
+                DomainState::Crashed => DomainStateReason::Crashed(
+                    DomainCrashedReasonEnum::from_raw(reason as sys::virDomainCrashedReason),
+                ),
+                DomainState::PMSuspended => {
+                    DomainStateReason::PMSuspended(DomainPMSuspendedReasonEnum::from_raw(
+                        reason as sys::virDomainPMSuspendedReason,
+                    ))
+                }
+            }),
+            Enum::Unknown(_) => DomainStateReasonEnum::Unknown(reason),
+        };
+        Ok((state, reason))
     }
 
     /// Get the public name of the domain.

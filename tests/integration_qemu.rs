@@ -22,7 +22,7 @@
 mod common;
 
 use virt::connect::{Connect, ConnectAuth, ConnectCredential};
-use virt::domain::DomainState;
+use virt::domain::{DomainRunningReason, DomainState, DomainStateReason};
 use virt::sys;
 
 #[test]
@@ -31,7 +31,13 @@ fn test_create_domain_with_flags() {
     let c = common::qemu_conn();
     let d = common::build_qemu_domain(&c, "create", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((DomainState::Running.into(), 1)), d.get_state());
+    assert_eq!(
+        Ok((
+            DomainState::Running.into(),
+            DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
+        )),
+        d.get_state()
+    );
     assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.get_name());
     common::clean_dom(d);
     common::close(c);
@@ -150,7 +156,13 @@ fn test_reset() {
     let c = common::qemu_conn();
     let d = common::build_qemu_domain(&c, "reset", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((DomainState::Running.into(), 1)), d.get_state());
+    assert_eq!(
+        Ok((
+            DomainState::Running.into(),
+            DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
+        )),
+        d.get_state()
+    );
     assert_eq!(Ok(0), d.reset());
     // TODO assert something showing reset has the intended side effect
     common::clean_dom(d);
