@@ -41,7 +41,6 @@ impl_enum! {
         sys::VIR_ERR_NONE => None,
         sys::VIR_ERR_WARNING => Warning,
         sys::VIR_ERR_ERROR => Error,
-        _ => None,
     }
 }
 
@@ -195,8 +194,6 @@ pub enum ErrorDomain {
     Bpf,
     /// Error from Cloud Hypervisor driver
     Ch,
-    /// Indicates an error domain not yet supported by the Rust bindings
-    Last,
 }
 
 impl_enum! {
@@ -276,7 +273,6 @@ impl_enum! {
         sys::VIR_FROM_TPM => Tpm,
         sys::VIR_FROM_BPF => Bpf,
         sys::VIR_FROM_CH => Ch,
-        _ => Last => sys::VIR_FROM_NONE,
     }
 }
 
@@ -512,8 +508,6 @@ pub enum ErrorNumber {
     AgentCommandTimeout,
     /// Guest agent responded with failure to a command
     AgentCommandFailed,
-    /// Indicates an error number not yet supported by the Rust bindings
-    Last,
 }
 
 impl_enum! {
@@ -634,7 +628,6 @@ impl_enum! {
         sys::VIR_ERR_NO_NETWORK_METADATA => NoNetworkMetadata,
         sys::VIR_ERR_AGENT_COMMAND_TIMEOUT => AgentCommandTimeout,
         sys::VIR_ERR_AGENT_COMMAND_FAILED => AgentCommandFailed,
-        _ => Last => sys::VIR_ERR_INTERNAL_ERROR,
     }
 }
 
@@ -671,12 +664,14 @@ impl Error {
     }
 
     unsafe fn from_raw(ptr: sys::virErrorPtr) -> Error {
-        let code = ErrorNumber::from_raw((*ptr).code as sys::virErrorNumber);
-        let domain = ErrorDomain::from_raw((*ptr).domain as sys::virErrorDomain);
+        let code = ErrorNumber::from_raw((*ptr).code as sys::virErrorNumber)
+            .unwrap_or(ErrorNumber::InternalError);
+        let domain = ErrorDomain::from_raw((*ptr).domain as sys::virErrorDomain)
+            .unwrap_or(ErrorDomain::None);
         let message = CStr::from_ptr((*ptr).message)
             .to_string_lossy()
             .into_owned();
-        let level = ErrorLevel::from_raw((*ptr).level);
+        let level = ErrorLevel::from_raw((*ptr).level).unwrap_or(ErrorLevel::None);
         Error {
             code,
             domain,
