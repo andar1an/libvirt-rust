@@ -30,7 +30,7 @@ fn test_create_domain_with_flags() {
     let c = common::qemu_conn();
     let d = common::build_qemu_domain(&c, "create", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(Ok((sys::VIR_DOMAIN_START_PAUSED, 1)), d.get_state());
+    assert_eq!(Ok((sys::VIR_DOMAIN_RUNNING, 1)), d.get_state());
     assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.get_name());
     common::clean_dom(d);
     common::close(c);
