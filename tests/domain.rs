@@ -218,7 +218,7 @@ fn test_lookup_domain_by_name() {
 fn test_create_with_flags() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "create", false);
-    assert_eq!(Ok(0), d.create_with_flags(0));
+    assert_eq!(Ok(()), d.create_with_flags(0));
     assert_eq!(
         Ok((
             DomainState::Running.into(),
@@ -235,7 +235,7 @@ fn test_create_with_flags() {
 fn test_shutdown() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "shutdown", false);
-    assert_eq!(Ok(0), d.create_with_flags(0));
+    assert_eq!(Ok(()), d.create_with_flags(0));
     assert_eq!(
         Ok((
             DomainState::Running.into(),
@@ -243,7 +243,7 @@ fn test_shutdown() {
         )),
         d.state()
     );
-    assert_eq!(Ok(0), d.shutdown());
+    assert_eq!(Ok(()), d.shutdown());
     assert_eq!(
         Ok((
             DomainState::Shutoff.into(),
@@ -259,7 +259,7 @@ fn test_shutdown() {
 fn test_pause_resume() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "pause_resume", false);
-    assert_eq!(Ok(0), d.create_with_flags(0));
+    assert_eq!(Ok(()), d.create_with_flags(0));
     assert_eq!(
         Ok((
             DomainState::Running.into(),
@@ -267,7 +267,7 @@ fn test_pause_resume() {
         )),
         d.state()
     );
-    assert_eq!(Ok(0), d.suspend());
+    assert_eq!(Ok(()), d.suspend());
     assert_eq!(
         Ok((
             DomainState::Paused.into(),
@@ -275,7 +275,7 @@ fn test_pause_resume() {
         )),
         d.state()
     );
-    assert_eq!(Ok(0), d.resume());
+    assert_eq!(Ok(()), d.resume());
     assert_eq!(
         Ok((
             DomainState::Running.into(),
@@ -291,7 +291,7 @@ fn test_pause_resume() {
 fn test_screenshot() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "screenshot", false);
-    assert_eq!(Ok(0), d.create_with_flags(0));
+    assert_eq!(Ok(()), d.create_with_flags(0));
     assert_eq!(
         Ok((
             DomainState::Running.into(),
@@ -322,7 +322,7 @@ fn test_metadata() {
     );
 
     assert_eq!(
-        Ok(0),
+        Ok(()),
         d.set_metadata(
             sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32,
             Some("fish"),
@@ -336,7 +336,7 @@ fn test_metadata() {
         d.metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
     );
     assert_eq!(
-        Ok(0),
+        Ok(()),
         d.set_metadata(
             sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32,
             None,
@@ -363,7 +363,7 @@ fn test_metadata() {
     );
 
     assert_eq!(
-        Ok(0),
+        Ok(()),
         d.set_metadata(
             sys::VIR_DOMAIN_METADATA_TITLE as i32,
             Some("food"),
@@ -377,7 +377,7 @@ fn test_metadata() {
         d.metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
     );
     assert_eq!(
-        Ok(0),
+        Ok(()),
         d.set_metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, None, None, 0)
     );
 
@@ -402,7 +402,7 @@ fn test_metadata() {
     );
 
     assert_eq!(
-        Ok(0),
+        Ok(()),
         d.set_metadata(
             sys::VIR_DOMAIN_METADATA_ELEMENT as i32,
             Some(xmldoc),
@@ -416,7 +416,7 @@ fn test_metadata() {
         d.metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
     );
     assert_eq!(
-        Ok(0),
+        Ok(()),
         d.set_metadata(
             sys::VIR_DOMAIN_METADATA_ELEMENT as i32,
             None,

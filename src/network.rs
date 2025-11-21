@@ -140,12 +140,12 @@ impl Network {
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
-    pub fn create(&self) -> Result<u32, Error> {
+    pub fn create(&self) -> Result<(), Error> {
         let ret = unsafe { sys::virNetworkCreate(self.as_ptr()) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn destroy(&self) -> Result<(), Error> {
@@ -189,12 +189,12 @@ impl Network {
         Ok(auto == 1)
     }
 
-    pub fn set_autostart(&self, autostart: bool) -> Result<u32, Error> {
+    pub fn set_autostart(&self, autostart: bool) -> Result<(), Error> {
         let ret = unsafe { sys::virNetworkSetAutostart(self.as_ptr(), autostart as libc::c_int) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn update(

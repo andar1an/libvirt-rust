@@ -1066,7 +1066,7 @@ impl Connect {
         })
     }
 
-    pub fn set_keep_alive(&self, interval: i32, count: u32) -> Result<i32, Error> {
+    pub fn set_keep_alive(&self, interval: i32, count: u32) -> Result<(), Error> {
         let ret = unsafe {
             sys::virConnectSetKeepAlive(
                 self.as_ptr(),
@@ -1077,7 +1077,7 @@ impl Connect {
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret)
+        Ok(())
     }
 
     pub fn domain_xml_from_native(
@@ -1485,7 +1485,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ptr) })
     }
 
-    pub fn save_image_define_xml(&self, file: &str, dxml: &str, flags: u32) -> Result<u32, Error> {
+    pub fn save_image_define_xml(&self, file: &str, dxml: &str, flags: u32) -> Result<(), Error> {
         let file_buf = CString::new(file)?;
         let dxml_buf = CString::new(dxml)?;
         let ret = unsafe {
@@ -1499,7 +1499,7 @@ impl Connect {
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn lookup_network_by_name(&self, id: &str) -> Result<Network, Error> {

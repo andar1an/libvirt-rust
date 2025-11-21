@@ -30,7 +30,7 @@ use virt::sys;
 fn test_create_domain_with_flags() {
     let c = common::qemu_conn();
     let d = common::build_qemu_domain(&c, "create", false);
-    assert_eq!(Ok(0), d.create_with_flags(0));
+    assert_eq!(Ok(()), d.create_with_flags(0));
     assert_eq!(
         Ok((
             DomainState::Running.into(),
@@ -48,7 +48,7 @@ fn test_create_domain_with_flags() {
 fn test_create_storage_pool_and_vols() {
     let c = common::qemu_conn();
     let p = common::build_storage_pool(&c, "create", false);
-    assert_eq!(Ok(0), p.create(0));
+    assert_eq!(Ok(()), p.create(0));
     assert_eq!(Ok(String::from("libvirt-rs-test-create")), p.name());
     let v = common::build_storage_vol(&p, "vol1", 8);
     assert_eq!(Ok(String::from("vol1")), v.name());
@@ -64,7 +64,7 @@ fn test_create_storage_pool_and_vols() {
         common::close(c);
         panic!("should not be here")
     }
-    assert_eq!(Ok(0), v.resize(10240, 0));
+    assert_eq!(Ok(()), v.resize(10240, 0));
     if let Ok(info) = v.info() {
         assert_eq!(0, info.kind);
         assert_eq!(8192, info.allocation);
@@ -155,7 +155,7 @@ fn test_connection_with_auth_wrong() {
 fn test_reset() {
     let c = common::qemu_conn();
     let d = common::build_qemu_domain(&c, "reset", false);
-    assert_eq!(Ok(0), d.create_with_flags(0));
+    assert_eq!(Ok(()), d.create_with_flags(0));
     assert_eq!(
         Ok((
             DomainState::Running.into(),
@@ -163,7 +163,7 @@ fn test_reset() {
         )),
         d.state()
     );
-    assert_eq!(Ok(0), d.reset());
+    assert_eq!(Ok(()), d.reset());
     // TODO assert something showing reset has the intended side effect
     common::clean_dom(d);
     common::close(c);
@@ -174,7 +174,7 @@ fn test_reset() {
 fn test_domain_memory_stats() {
     let c = common::qemu_conn();
     let d = common::build_qemu_domain(&c, "memory_stats", false);
-    assert_eq!(Ok(0), d.create_with_flags(0));
+    assert_eq!(Ok(()), d.create_with_flags(0));
     assert_eq!(Ok(String::from("libvirt-rs-test-memory_stats")), d.name());
     for stat in d.memory_stats(0).unwrap() {
         match stat.tag {

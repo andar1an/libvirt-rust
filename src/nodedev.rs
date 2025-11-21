@@ -104,39 +104,39 @@ impl NodeDevice {
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
-    pub fn destroy(&self) -> Result<u32, Error> {
+    pub fn destroy(&self) -> Result<(), Error> {
         let ret = unsafe { sys::virNodeDeviceDestroy(self.as_ptr()) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
-    pub fn detach(&self) -> Result<u32, Error> {
+    pub fn detach(&self) -> Result<(), Error> {
         let ret = unsafe { sys::virNodeDeviceDettach(self.as_ptr()) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
-    pub fn reset(&self) -> Result<u32, Error> {
+    pub fn reset(&self) -> Result<(), Error> {
         let ret = unsafe { sys::virNodeDeviceReset(self.as_ptr()) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
-    pub fn reattach(&self) -> Result<u32, Error> {
+    pub fn reattach(&self) -> Result<(), Error> {
         let ret = unsafe { sys::virNodeDeviceReAttach(self.as_ptr()) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
-    pub fn detach_flags(&self, driver: Option<&str>, flags: u32) -> Result<u32, Error> {
+    pub fn detach_flags(&self, driver: Option<&str>, flags: u32) -> Result<(), Error> {
         let driver_buf = some_string_to_cstring!(driver);
         let ret = unsafe {
             sys::virNodeDeviceDetachFlags(
@@ -148,7 +148,7 @@ impl NodeDevice {
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn num_of_caps(&self) -> Result<u32, Error> {

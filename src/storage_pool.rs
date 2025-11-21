@@ -210,20 +210,20 @@ impl StoragePool {
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
-    pub fn create(&self, flags: sys::virStoragePoolCreateFlags) -> Result<u32, Error> {
+    pub fn create(&self, flags: sys::virStoragePoolCreateFlags) -> Result<(), Error> {
         let ret = unsafe { sys::virStoragePoolCreate(self.as_ptr(), flags) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
-    pub fn build(&self, flags: u32) -> Result<u32, Error> {
+    pub fn build(&self, flags: u32) -> Result<(), Error> {
         let ret = unsafe { sys::virStoragePoolBuild(self.as_ptr(), flags) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn destroy(&self) -> Result<(), Error> {
@@ -266,12 +266,12 @@ impl StoragePool {
         Ok(ret == 1)
     }
 
-    pub fn refresh(&self, flags: u32) -> Result<u32, Error> {
+    pub fn refresh(&self, flags: u32) -> Result<(), Error> {
         let ret = unsafe { sys::virStoragePoolRefresh(self.as_ptr(), flags as libc::c_uint) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
     pub fn autostart(&self) -> Result<bool, Error> {
         let mut auto = 0;
@@ -282,13 +282,13 @@ impl StoragePool {
         Ok(auto == 1)
     }
 
-    pub fn set_autostart(&self, autostart: bool) -> Result<u32, Error> {
+    pub fn set_autostart(&self, autostart: bool) -> Result<(), Error> {
         let ret =
             unsafe { sys::virStoragePoolSetAutostart(self.as_ptr(), autostart as libc::c_int) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn info(&self) -> Result<StoragePoolInfo, Error> {

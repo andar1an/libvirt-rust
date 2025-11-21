@@ -115,12 +115,12 @@ impl Interface {
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
-    pub fn create(&self, flags: sys::virInterfaceXMLFlags) -> Result<u32, Error> {
+    pub fn create(&self, flags: sys::virInterfaceXMLFlags) -> Result<(), Error> {
         let ret = unsafe { sys::virInterfaceCreate(self.as_ptr(), flags) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn destroy(&self, flags: u32) -> Result<(), Error> {

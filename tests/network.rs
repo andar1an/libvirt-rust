@@ -22,7 +22,7 @@ mod common;
 fn test_create() {
     let c = common::conn();
     let n = common::build_network(&c, "wipes", false);
-    assert_eq!(Ok(0), n.create());
+    assert_eq!(Ok(()), n.create());
     assert_eq!(Ok(String::from("libvirt-rs-test-wipes")), n.name());
     assert!(n.uuid().is_ok());
     assert!(!n.uuid_string().unwrap_or_default().is_empty());
@@ -36,7 +36,7 @@ fn test_active() {
     let c = common::conn();
     let n = common::build_network(&c, "active", false);
     assert_eq!(Ok(false), n.is_active());
-    assert_eq!(Ok(0), n.create());
+    assert_eq!(Ok(()), n.create());
     assert_eq!(Ok(true), n.is_active());
     common::clean_net(n);
     common::close(c);
@@ -46,9 +46,9 @@ fn test_active() {
 fn test_auto_start() {
     let c = common::conn();
     let n = common::build_network(&c, "autostart", false);
-    assert_eq!(Ok(0), n.create());
+    assert_eq!(Ok(()), n.create());
     assert_eq!(Ok(false), n.autostart());
-    assert_eq!(Ok(0), n.set_autostart(true));
+    assert_eq!(Ok(()), n.set_autostart(true));
     assert_eq!(Ok(true), n.autostart());
     common::clean_net(n);
     common::close(c);

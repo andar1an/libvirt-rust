@@ -229,7 +229,7 @@ impl StorageVol {
         Ok(())
     }
 
-    pub fn resize(&self, capacity: u64, flags: u32) -> Result<u32, Error> {
+    pub fn resize(&self, capacity: u64, flags: u32) -> Result<(), Error> {
         let ret = unsafe {
             sys::virStorageVolResize(
                 self.as_ptr(),
@@ -240,7 +240,7 @@ impl StorageVol {
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret as u32)
+        Ok(())
     }
 
     pub fn info(&self) -> Result<StorageVolInfo, Error> {
