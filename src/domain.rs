@@ -1448,20 +1448,20 @@ impl Domain {
         Ok(autostart == 1)
     }
 
-    pub fn set_autostart(&self, autostart: bool) -> Result<bool, Error> {
+    pub fn set_autostart(&self, autostart: bool) -> Result<(), Error> {
         let ret = unsafe { sys::virDomainSetAutostart(self.as_ptr(), autostart as libc::c_int) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret == 1)
+        Ok(())
     }
 
-    pub fn set_max_memory(&self, memory: u64) -> Result<bool, Error> {
+    pub fn set_max_memory(&self, memory: u64) -> Result<(), Error> {
         let ret = unsafe { sys::virDomainSetMaxMemory(self.as_ptr(), memory as libc::c_ulong) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret == 1)
+        Ok(())
     }
 
     pub fn max_memory(&self) -> Result<u64, Error> {
@@ -1480,19 +1480,19 @@ impl Domain {
         Ok(ret as u64)
     }
 
-    pub fn set_memory(&self, memory: u64) -> Result<bool, Error> {
+    pub fn set_memory(&self, memory: u64) -> Result<(), Error> {
         let ret = unsafe { sys::virDomainSetMemory(self.as_ptr(), memory as libc::c_ulong) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret == 1)
+        Ok(())
     }
 
     pub fn set_memory_flags(
         &self,
         memory: u64,
         flags: sys::virDomainMemoryModFlags,
-    ) -> Result<bool, Error> {
+    ) -> Result<(), Error> {
         let ret = unsafe {
             sys::virDomainSetMemoryFlags(
                 self.as_ptr(),
@@ -1503,14 +1503,14 @@ impl Domain {
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret == 1)
+        Ok(())
     }
 
     pub fn set_memory_stats_period(
         &self,
         period: i32,
         flags: sys::virDomainMemoryModFlags,
-    ) -> Result<bool, Error> {
+    ) -> Result<(), Error> {
         let ret = unsafe {
             sys::virDomainSetMemoryStatsPeriod(
                 self.as_ptr(),
@@ -1521,29 +1521,25 @@ impl Domain {
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret == 1)
+        Ok(())
     }
 
-    pub fn set_vcpus(&self, vcpus: u32) -> Result<bool, Error> {
+    pub fn set_vcpus(&self, vcpus: u32) -> Result<(), Error> {
         let ret = unsafe { sys::virDomainSetVcpus(self.as_ptr(), vcpus as libc::c_uint) };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret == 1)
+        Ok(())
     }
 
-    pub fn set_vcpus_flags(
-        &self,
-        vcpus: u32,
-        flags: sys::virDomainVcpuFlags,
-    ) -> Result<bool, Error> {
+    pub fn set_vcpus_flags(&self, vcpus: u32, flags: sys::virDomainVcpuFlags) -> Result<(), Error> {
         let ret = unsafe {
             sys::virDomainSetVcpusFlags(self.as_ptr(), vcpus as libc::c_uint, flags as libc::c_uint)
         };
         if ret == -1 {
             return Err(Error::last_error());
         }
-        Ok(ret == 1)
+        Ok(())
     }
 
     pub fn vcpus_flags(&self, flags: sys::virDomainVcpuFlags) -> Result<u32, Error> {
