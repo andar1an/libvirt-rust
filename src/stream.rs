@@ -16,10 +16,9 @@
  * Sahid Orentino Ferdjaoui <sahid.ferdjaoui@redhat.com>
  */
 
-use std::convert::TryFrom;
-
 use crate::connect::Connect;
 use crate::error::Error;
+use crate::util::{check_neg, check_null};
 
 // wrapper for callbacks
 extern "C" fn event_callback(c: sys::virStreamPtr, flags: libc::c_int, opaque: *mut libc::c_void) {
@@ -56,9 +55,7 @@ impl Drop for Stream {
                 panic!("Unable to remove event callback for Stream: {e}")
             }
         }
-        let ret = unsafe { sys::virStreamFree(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virStreamFree(self.as_ptr()) }) {
             panic!("Unable to drop reference on stream: {e}")
         }
     }
@@ -70,22 +67,16 @@ impl Clone for Stream {
     /// Increments the internal reference counter on the given
     /// stream.
     fn clone(&self) -> Self {
-        let ret = unsafe { sys::virStreamRef(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
-            panic!("Unable to add reference on stream: {e}");
+        if let Err(e) = check_neg!(unsafe { sys::virStreamRef(self.as_ptr()) }) {
+            panic!("Unable to add reference on stream: {e}")
         }
-
         unsafe { Stream::from_ptr(self.as_ptr()) }
     }
 }
 
 impl Stream {
     pub fn new(conn: &Connect, flags: sys::virStreamFlags) -> Result<Stream, Error> {
-        let ptr = unsafe { sys::virStreamNew(conn.as_ptr(), flags as libc::c_uint) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe { sys::virStreamNew(conn.as_ptr(), flags as libc::c_uint) })?;
         Ok(unsafe { Stream::from_ptr(ptr) })
     }
 
@@ -114,41 +105,35 @@ impl Stream {
     }
 
     pub fn finish(self) -> Result<(), Error> {
-        let ret = unsafe { sys::virStreamFinish(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virStreamFinish(self.as_ptr()) })?;
         Ok(())
     }
 
     pub fn abort(self) -> Result<(), Error> {
-        let ret = unsafe { sys::virStreamAbort(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virStreamAbort(self.as_ptr()) })?;
         Ok(())
     }
 
     pub fn send(&self, data: &[u8]) -> Result<isize, Error> {
-        let ret = unsafe {
+        let ret = check_neg!(unsafe {
             sys::virStreamSend(
                 self.as_ptr(),
                 data.as_ptr() as *mut libc::c_char,
                 data.len(),
             )
-        };
-        isize::try_from(ret).map_err(|_| Error::last_error())
+        })?;
+        Ok(ret as isize)
     }
 
     pub fn recv(&self, buf: &mut [u8]) -> Result<isize, Error> {
-        let ret = unsafe {
+        let ret = check_neg!(unsafe {
             sys::virStreamRecv(
                 self.as_ptr(),
                 buf.as_mut_ptr() as *mut libc::c_char,
                 buf.len(),
             )
-        };
-        isize::try_from(ret).map_err(|_| Error::last_error())
+        })?;
+        Ok(ret as isize)
     }
 
     pub fn event_add_callback<F: 'static + FnMut(&Stream, sys::virStreamEventType)>(
@@ -156,7 +141,7 @@ impl Stream {
         events: sys::virStreamEventType,
         cb: F,
     ) -> Result<(), Error> {
-        let ret = unsafe {
+        let _ = check_neg!(unsafe {
             let ptr = self as *mut _ as *mut _;
             sys::virStreamEventAddCallback(
                 self.as_ptr(),
@@ -165,28 +150,20 @@ impl Stream {
                 ptr,
                 Some(event_free),
             )
-        };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
         self.callback = Some(Box::new(cb));
         Ok(())
     }
 
     pub fn event_update_callback(&self, events: sys::virStreamEventType) -> Result<(), Error> {
-        let ret =
-            unsafe { sys::virStreamEventUpdateCallback(self.as_ptr(), events as libc::c_int) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe {
+            sys::virStreamEventUpdateCallback(self.as_ptr(), events as libc::c_int)
+        })?;
         Ok(())
     }
 
     pub fn event_remove_callback(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virStreamEventRemoveCallback(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virStreamEventRemoveCallback(self.as_ptr()) })?;
         Ok(())
     }
 }
