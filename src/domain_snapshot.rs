@@ -93,12 +93,17 @@ impl DomainSnapshot {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Returns the snapshot name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virDomainSnapshotGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    /// Dump the XML of a snapshot.
+    /// Returns the snapshot XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotGetXMLDesc>
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = check_null!(unsafe {
             sys::virDomainSnapshotGetXMLDesc(self.as_ptr(), flags as libc::c_uint)
@@ -107,6 +112,8 @@ impl DomainSnapshot {
     }
 
     /// Get a handle to the parent snapshot, if one exists.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotGetParent>
     pub fn parent(&self, flags: u32) -> Result<DomainSnapshot, Error> {
         let ptr = check_null!(unsafe {
             sys::virDomainSnapshotGetParent(self.as_ptr(), flags as libc::c_uint)
@@ -115,6 +122,8 @@ impl DomainSnapshot {
     }
 
     /// Revert a snapshot.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainRevertToSnapshot>
     pub fn revert(&self, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainRevertToSnapshot(self.as_ptr(), flags as libc::c_uint)
@@ -123,6 +132,8 @@ impl DomainSnapshot {
     }
 
     /// Delete a snapshot.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotDelete>
     pub fn delete(&self, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainSnapshotDelete(self.as_ptr(), flags as libc::c_uint)
@@ -131,6 +142,8 @@ impl DomainSnapshot {
     }
 
     /// Return the number of child snapshots for this snapshot.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotNumChildren>
     pub fn num_children(&self, flags: u32) -> Result<u32, Error> {
         let ret = check_neg!(unsafe {
             sys::virDomainSnapshotNumChildren(self.as_ptr(), flags as libc::c_uint)
@@ -139,6 +152,8 @@ impl DomainSnapshot {
     }
 
     /// Determine if a snapshot is the current snapshot of its domain.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotIsCurrent>
     pub fn is_current(&self, flags: u32) -> Result<bool, Error> {
         let ret = check_neg!(unsafe {
             sys::virDomainSnapshotIsCurrent(self.as_ptr(), flags as libc::c_uint)
@@ -148,6 +163,8 @@ impl DomainSnapshot {
 
     /// Determine if a snapshot has associated libvirt metadata that
     /// would prevent the deletion of its domain.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotHasMetadata>
     pub fn has_metadata(&self, flags: u32) -> Result<bool, Error> {
         let ret = check_neg!(unsafe {
             sys::virDomainSnapshotHasMetadata(self.as_ptr(), flags as libc::c_uint)
@@ -156,6 +173,8 @@ impl DomainSnapshot {
     }
 
     /// Get all snapshot object children for this snapshot.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotListAllChildren>
     pub fn list_all_children(&self, flags: u32) -> Result<Vec<DomainSnapshot>, Error> {
         let mut snaps: *mut sys::virDomainSnapshotPtr = ptr::null_mut();
         let size = check_neg!(unsafe {
