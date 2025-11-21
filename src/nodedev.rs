@@ -20,6 +20,7 @@ use std::ffi::CString;
 use std::{ptr, str};
 
 use crate::error::Error;
+use crate::util::{check_neg, check_null};
 
 /// Provides APIs for the management of nodedevs.
 ///
@@ -34,9 +35,7 @@ unsafe impl Sync for NodeDevice {}
 
 impl Drop for NodeDevice {
     fn drop(&mut self) {
-        let ret = unsafe { sys::virNodeDeviceFree(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virNodeDeviceFree(self.as_ptr()) }) {
             panic!("Unable to drop reference on node device: {e}")
         }
     }
@@ -48,12 +47,9 @@ impl Clone for NodeDevice {
     /// Increments the internal reference counter on the given
     /// device.
     fn clone(&self) -> Self {
-        let ret = unsafe { sys::virNodeDeviceRef(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virNodeDeviceRef(self.as_ptr()) }) {
             panic!("Unable to add reference on node device: {e}")
         }
-
         unsafe { NodeDevice::from_ptr(self.as_ptr()) }
     }
 }
@@ -81,91 +77,65 @@ impl NodeDevice {
     }
 
     pub fn name(&self) -> Result<String, Error> {
-        let n = unsafe { sys::virNodeDeviceGetName(self.as_ptr()) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe { sys::virNodeDeviceGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
     pub fn parent(&self) -> Result<String, Error> {
-        let n = unsafe { sys::virNodeDeviceGetParent(self.as_ptr()) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe { sys::virNodeDeviceGetParent(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
-        let xml = unsafe { sys::virNodeDeviceGetXMLDesc(self.as_ptr(), flags as libc::c_uint) };
-        if xml.is_null() {
-            return Err(Error::last_error());
-        }
+        let xml = check_null!(unsafe {
+            sys::virNodeDeviceGetXMLDesc(self.as_ptr(), flags as libc::c_uint)
+        })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
     pub fn destroy(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virNodeDeviceDestroy(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virNodeDeviceDestroy(self.as_ptr()) })?;
         Ok(())
     }
 
     pub fn detach(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virNodeDeviceDettach(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virNodeDeviceDettach(self.as_ptr()) })?;
         Ok(())
     }
 
     pub fn reset(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virNodeDeviceReset(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virNodeDeviceReset(self.as_ptr()) })?;
         Ok(())
     }
 
     pub fn reattach(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virNodeDeviceReAttach(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virNodeDeviceReAttach(self.as_ptr()) })?;
         Ok(())
     }
 
     pub fn detach_flags(&self, driver: Option<&str>, flags: u32) -> Result<(), Error> {
         let driver_buf = some_string_to_cstring!(driver);
-        let ret = unsafe {
+        let _ = check_neg!(unsafe {
             sys::virNodeDeviceDetachFlags(
                 self.as_ptr(),
                 some_cstring_to_c_chars!(driver_buf),
                 flags as libc::c_uint,
             )
-        };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(())
     }
 
     pub fn num_of_caps(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virNodeDeviceNumOfCaps(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virNodeDeviceNumOfCaps(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
     #[allow(clippy::needless_range_loop)]
     pub fn list_caps(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size = unsafe { sys::virNodeDeviceListCaps(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
+        let size = check_neg!(unsafe {
+            sys::virNodeDeviceListCaps(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
 
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
