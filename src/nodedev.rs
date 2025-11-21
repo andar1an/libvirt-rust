@@ -76,16 +76,25 @@ impl NodeDevice {
         self.ptr
     }
 
+    /// Returns the name of the node device
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virNodeDeviceGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the name of the parent node device
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceGetParent>
     pub fn parent(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virNodeDeviceGetParent(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the node device XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceGetXMLDesc>
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = check_null!(unsafe {
             sys::virNodeDeviceGetXMLDesc(self.as_ptr(), flags as libc::c_uint)
@@ -93,26 +102,41 @@ impl NodeDevice {
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
+    /// Remove the node device
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceDestroy>
     pub fn destroy(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNodeDeviceDestroy(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Detach the node device from the host kernel driver
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceDettach>
     pub fn detach(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNodeDeviceDettach(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Perform a hardware reset on the node device
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceReset>
     pub fn reset(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNodeDeviceReset(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Re-attach the node device to the host kernel driver
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceReAttach>
     pub fn reattach(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNodeDeviceReAttach(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Detach the node device from the host kernel driver
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceDetachFlags>
     pub fn detach_flags(&self, driver: Option<&str>, flags: u32) -> Result<(), Error> {
         let driver_buf = some_string_to_cstring!(driver);
         let _ = check_neg!(unsafe {
@@ -125,11 +149,17 @@ impl NodeDevice {
         Ok(())
     }
 
+    /// Returns the number of node device capability names
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceNumOfCaps>
     pub fn num_of_caps(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virNodeDeviceNumOfCaps(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// List the node device capability names
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceListCaps>
     #[allow(clippy::needless_range_loop)]
     pub fn list_caps(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
