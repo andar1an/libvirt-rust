@@ -84,16 +84,25 @@ impl Secret {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
+    /// Returns the secret usage ID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretGetUsageID>
     pub fn usage_id(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virSecretGetUsageID(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
+    /// Returns the secret usage type
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretGetUsageType>
     pub fn usage_type(&self) -> Result<u32, Error> {
         let t = check_neg!(unsafe { sys::virSecretGetUsageType(self.as_ptr()) })?;
         Ok(t as u32)
     }
 
+    /// Returns the secret UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretGetUUID>
     pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
@@ -101,6 +110,9 @@ impl Secret {
         Ok(Uuid::from_bytes(uuid))
     }
 
+    /// Returns the secret UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretGetUUIDString>
     pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
@@ -109,11 +121,17 @@ impl Secret {
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
+    /// Returns the secret XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretGetXMLDesc>
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = check_null!(unsafe { sys::virSecretGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
+    /// Sets the secret data value
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretSetValue>
     pub fn set_value(&self, value: &[u8], flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virSecretSetValue(self.as_ptr(), value.as_ptr(), value.len(), flags)
@@ -121,6 +139,9 @@ impl Secret {
         Ok(())
     }
 
+    /// Returns the secret data value
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretGetValue>
     pub fn value(&self, flags: u32) -> Result<Vec<u8>, Error> {
         let mut size: usize = 0;
         let n = check_null!(unsafe {
@@ -134,6 +155,9 @@ impl Secret {
         Ok(array)
     }
 
+    /// Removes the secret object configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretUndefine>
     pub fn undefine(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virSecretUndefine(self.as_ptr()) })?;
         Ok(())
