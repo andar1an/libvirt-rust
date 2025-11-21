@@ -80,7 +80,7 @@ impl NodeDevice {
         self.ptr
     }
 
-    pub fn get_name(&self) -> Result<String, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virNodeDeviceGetName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -88,7 +88,7 @@ impl NodeDevice {
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    pub fn get_parent(&self) -> Result<String, Error> {
+    pub fn parent(&self) -> Result<String, Error> {
         let n = unsafe { sys::virNodeDeviceGetParent(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -96,7 +96,7 @@ impl NodeDevice {
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    pub fn get_xml_desc(&self, flags: u32) -> Result<String, Error> {
+    pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = unsafe { sys::virNodeDeviceGetXMLDesc(self.as_ptr(), flags as libc::c_uint) };
         if xml.is_null() {
             return Err(Error::last_error());
