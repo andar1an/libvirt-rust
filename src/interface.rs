@@ -82,36 +82,57 @@ impl Interface {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
+    /// Returns the interface name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virInterfaceGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the interface MAC address string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceGetMACString>
     pub fn mac_string(&self) -> Result<String, Error> {
         let mac = check_null!(unsafe { sys::virInterfaceGetMACString(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(mac, nofree) })
     }
 
+    /// Returns the interface XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceGetXMLDesc>
     pub fn xml_desc(&self, flags: sys::virInterfaceXMLFlags) -> Result<String, Error> {
         let xml = check_null!(unsafe { sys::virInterfaceGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
+    /// Starts the inactive interface
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceCreate>
     pub fn create(&self, flags: sys::virInterfaceXMLFlags) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virInterfaceCreate(self.as_ptr(), flags) })?;
         Ok(())
     }
 
+    /// Stops the active interface
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceDestroy>
     pub fn destroy(&self, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virInterfaceDestroy(self.as_ptr(), flags) })?;
         Ok(())
     }
 
+    /// Removes the interface configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceUndefine>
     pub fn undefine(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virInterfaceUndefine(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Determines if the interface is active
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceIsActive>
     pub fn is_active(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virInterfaceIsActive(self.as_ptr()) })?;
         Ok(ret == 1)
