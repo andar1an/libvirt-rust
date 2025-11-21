@@ -152,7 +152,7 @@ struct Api {
     files: ApiFiles,
 }
 
-fn get_api_symbols(
+fn api_symbols(
     api: Api,
     funcs: &mut HashSet<String>,
     macros: &mut HashSet<String>,
@@ -246,7 +246,7 @@ fn load_mod(
 
     let api = from_str(&data).unwrap();
 
-    get_api_symbols(api, funcs, macros, enums);
+    api_symbols(api, funcs, macros, enums);
 }
 
 fn do_test_api(
