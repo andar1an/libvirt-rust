@@ -20,6 +20,7 @@ use uuid::Uuid;
 
 use crate::connect::Connect;
 use crate::error::Error;
+use crate::util::{check_neg, check_null};
 
 /// Provides APIs for the management of secrets.
 ///
@@ -34,9 +35,7 @@ unsafe impl Sync for Secret {}
 
 impl Drop for Secret {
     fn drop(&mut self) {
-        let ret = unsafe { sys::virSecretFree(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virSecretFree(self.as_ptr()) }) {
             panic!("Unable to drop reference on secret: {e}")
         }
     }
@@ -48,12 +47,9 @@ impl Clone for Secret {
     /// Increments the internal reference counter on the given
     /// secret.
     fn clone(&self) -> Self {
-        let ret = unsafe { sys::virSecretRef(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virSecretRef(self.as_ptr()) }) {
             panic!("Unable to add reference on secret: {e}")
         }
-
         unsafe { Secret::from_ptr(self.as_ptr()) }
     }
 }
@@ -81,77 +77,55 @@ impl Secret {
     }
 
     pub fn connect(&self) -> Result<Connect, Error> {
-        let ptr = unsafe { sys::virSecretGetConnect(self.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
-        let ret = unsafe { sys::virConnectRef(ptr) };
-        if ret == -1 {
-            let e = Error::last_error();
+        let ptr = check_null!(unsafe { sys::virSecretGetConnect(self.as_ptr()) })?;
+        if let Err(e) = check_neg!(unsafe { sys::virConnectRef(ptr) }) {
             panic!("Unable to add reference on connection: {e}")
         }
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
     pub fn usage_id(&self) -> Result<String, Error> {
-        let n = unsafe { sys::virSecretGetUsageID(self.as_ptr()) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe { sys::virSecretGetUsageID(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
     pub fn usage_type(&self) -> Result<u32, Error> {
-        let t = unsafe { sys::virSecretGetUsageType(self.as_ptr()) };
-        if t == -1 {
-            return Err(Error::last_error());
-        }
+        let t = check_neg!(unsafe { sys::virSecretGetUsageType(self.as_ptr()) })?;
         Ok(t as u32)
     }
 
     pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
-        let ret = unsafe { sys::virSecretGetUUID(self.as_ptr(), uuid.as_mut_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virSecretGetUUID(self.as_ptr(), uuid.as_mut_ptr()) })?;
         Ok(Uuid::from_bytes(uuid))
     }
 
     pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
-        let ret = unsafe { sys::virSecretGetUUIDString(self.as_ptr(), uuid.as_mut_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ =
+            check_neg!(unsafe { sys::virSecretGetUUIDString(self.as_ptr(), uuid.as_mut_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
-        let xml = unsafe { sys::virSecretGetXMLDesc(self.as_ptr(), flags) };
-        if xml.is_null() {
-            return Err(Error::last_error());
-        }
+        let xml = check_null!(unsafe { sys::virSecretGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
     pub fn set_value(&self, value: &[u8], flags: u32) -> Result<(), Error> {
-        let ret =
-            unsafe { sys::virSecretSetValue(self.as_ptr(), value.as_ptr(), value.len(), flags) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe {
+            sys::virSecretSetValue(self.as_ptr(), value.as_ptr(), value.len(), flags)
+        })?;
         Ok(())
     }
 
     pub fn value(&self, flags: u32) -> Result<Vec<u8>, Error> {
         let mut size: usize = 0;
-        let n = unsafe { sys::virSecretGetValue(self.as_ptr(), &mut size, flags as libc::c_uint) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe {
+            sys::virSecretGetValue(self.as_ptr(), &mut size, flags as libc::c_uint)
+        })?;
 
         let mut array: Vec<u8> = Vec::new();
         for x in 0..size {
@@ -161,10 +135,7 @@ impl Secret {
     }
 
     pub fn undefine(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virSecretUndefine(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virSecretUndefine(self.as_ptr()) })?;
         Ok(())
     }
 }
