@@ -81,7 +81,7 @@ impl DomainSnapshot {
         self.ptr
     }
 
-    pub fn get_connect(&self) -> Result<Connect, Error> {
+    pub fn connect(&self) -> Result<Connect, Error> {
         let ptr = unsafe { sys::virDomainSnapshotGetConnect(self.as_ptr()) };
         if ptr.is_null() {
             return Err(Error::last_error());
@@ -94,7 +94,7 @@ impl DomainSnapshot {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
-    pub fn get_domain(&self) -> Result<Domain, Error> {
+    pub fn domain(&self) -> Result<Domain, Error> {
         let ptr = unsafe { sys::virDomainSnapshotGetDomain(self.as_ptr()) };
         if ptr.is_null() {
             return Err(Error::last_error());
@@ -107,7 +107,7 @@ impl DomainSnapshot {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
-    pub fn get_name(&self) -> Result<String, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virDomainSnapshotGetName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -116,7 +116,7 @@ impl DomainSnapshot {
     }
 
     /// Dump the XML of a snapshot.
-    pub fn get_xml_desc(&self, flags: u32) -> Result<String, Error> {
+    pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = unsafe { sys::virDomainSnapshotGetXMLDesc(self.as_ptr(), flags as libc::c_uint) };
         if xml.is_null() {
             return Err(Error::last_error());
@@ -125,7 +125,7 @@ impl DomainSnapshot {
     }
 
     /// Get a handle to the parent snapshot, if one exists.
-    pub fn get_parent(&self, flags: u32) -> Result<DomainSnapshot, Error> {
+    pub fn parent(&self, flags: u32) -> Result<DomainSnapshot, Error> {
         let ptr = unsafe { sys::virDomainSnapshotGetParent(self.as_ptr(), flags as libc::c_uint) };
         if ptr.is_null() {
             return Err(Error::last_error());
