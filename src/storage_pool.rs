@@ -114,6 +114,9 @@ impl StoragePool {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
+    /// Returns the storage volume with the requested name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolLookupByName>
     pub fn lookup_storage_vol_by_name(&self, name: &str) -> Result<StorageVol, Error> {
         let name_buf = CString::new(name)?;
         let ptr = check_null!(unsafe {
@@ -122,16 +125,25 @@ impl StoragePool {
         Ok(unsafe { StorageVol::from_ptr(ptr) })
     }
 
+    /// Returns the storage pool name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virStoragePoolGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the number of storage volumes
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolNumOfVolumes>
     pub fn num_of_volumes(&self) -> Result<u32, Error> {
         let ret = check_neg!(unsafe { sys::virStoragePoolNumOfVolumes(self.as_ptr()) })?;
         Ok(ret as u32)
     }
 
+    /// Returns a list of storage volume names
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolListVolumes>
     #[allow(clippy::needless_range_loop)]
     pub fn list_volumes(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -146,6 +158,9 @@ impl StoragePool {
         Ok(array)
     }
 
+    /// Returns a list of storage volume objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolListAllVolumes>
     pub fn list_all_volumes(&self, flags: u32) -> Result<Vec<StorageVol>, Error> {
         let mut volumes: *mut sys::virStorageVolPtr = ptr::null_mut();
         let size = check_neg!(unsafe {
@@ -161,6 +176,9 @@ impl StoragePool {
         Ok(array)
     }
 
+    /// Returns the storage pool UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolGetUUID>
     pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
@@ -169,6 +187,9 @@ impl StoragePool {
         Ok(Uuid::from_bytes(uuid))
     }
 
+    /// Returns the storage pool UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolGetUUIDString>
     pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
@@ -178,47 +199,74 @@ impl StoragePool {
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
+    /// Returns the storage pool XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolGetXMLDesc>
     pub fn xml_desc(&self, flags: sys::virStorageXMLFlags) -> Result<String, Error> {
         let xml = check_null!(unsafe { sys::virStoragePoolGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
+    /// Start the storage pool
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolCreate>
     pub fn create(&self, flags: sys::virStoragePoolCreateFlags) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virStoragePoolCreate(self.as_ptr(), flags) })?;
         Ok(())
     }
 
+    /// Formats the storage pool data
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolBuild>
     pub fn build(&self, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virStoragePoolBuild(self.as_ptr(), flags) })?;
         Ok(())
     }
 
+    /// Stop the storage pool
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolDestroy>
     pub fn destroy(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virStoragePoolDestroy(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Delete the storage pool data
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolDelete>
     pub fn delete(&self, flags: u32) -> Result<(), Error> {
         let _ =
             check_neg!(unsafe { sys::virStoragePoolDelete(self.as_ptr(), flags as libc::c_uint) })?;
         Ok(())
     }
 
+    /// Remove the storage pool configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolUndefine>
     pub fn undefine(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virStoragePoolUndefine(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Determine whether the storage pool is active
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolIsActive>
     pub fn is_active(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virStoragePoolIsActive(self.as_ptr()) })?;
         Ok(ret == 1)
     }
 
+    /// Determine whether the storage pool has a persistent configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolIsPersistent>
     pub fn is_persistent(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virStoragePoolIsPersistent(self.as_ptr()) })?;
         Ok(ret == 1)
     }
 
+    /// Refreshes the volumes in a storage pool
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolRefresh>
     pub fn refresh(&self, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virStoragePoolRefresh(self.as_ptr(), flags as libc::c_uint)
@@ -226,12 +274,18 @@ impl StoragePool {
         Ok(())
     }
 
+    /// Returns the storage pool autostart behaviour
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolGetAutostart>
     pub fn autostart(&self) -> Result<bool, Error> {
         let mut auto = 0;
         let _ = check_neg!(unsafe { sys::virStoragePoolGetAutostart(self.as_ptr(), &mut auto) })?;
         Ok(auto == 1)
     }
 
+    /// Updates the storage pool autostart behaviour
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolSetAutostart>
     pub fn set_autostart(&self, autostart: bool) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virStoragePoolSetAutostart(self.as_ptr(), autostart as libc::c_int)
@@ -239,6 +293,9 @@ impl StoragePool {
         Ok(())
     }
 
+    /// Returns the storage pool information
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolGetInfo>
     pub fn info(&self) -> Result<StoragePoolInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let _ =
