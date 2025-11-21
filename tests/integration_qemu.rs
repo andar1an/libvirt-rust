@@ -49,7 +49,7 @@ fn test_create_storage_pool_and_vols() {
     let c = common::qemu_conn();
     let p = common::build_storage_pool(&c, "create", false);
     assert_eq!(Ok(0), p.create(0));
-    assert_eq!(Ok(String::from("libvirt-rs-test-create")), p.get_name());
+    assert_eq!(Ok(String::from("libvirt-rs-test-create")), p.name());
     let v = common::build_storage_vol(&p, "vol1", 8);
     assert_eq!(Ok(String::from("vol1")), v.get_name());
     assert_eq!(
@@ -81,7 +81,7 @@ fn test_create_storage_pool_and_vols() {
         common::close(c);
         panic!("should not be here")
     }
-    if let Ok(info) = p.get_info() {
+    if let Ok(info) = p.info() {
         assert_eq!(2, info.state);
         assert_eq!(0, info.capacity - (info.allocation + info.available));
     } else {

@@ -28,13 +28,10 @@ fn exercices() {
             assert!(!sp.is_empty(), "At least one storage_pool should exist");
             match conn.lookup_storage_pool_by_name(&sp[0]) {
                 Ok(storage_pool) => {
-                    assert!(!storage_pool.get_name().unwrap_or_default().is_empty());
-                    assert!(!storage_pool
-                        .get_uuid_string()
-                        .unwrap_or_default()
-                        .is_empty());
-                    assert!(storage_pool.get_uuid().is_ok());
-                    assert!(!storage_pool.get_xml_desc(0).unwrap_or_default().is_empty());
+                    assert!(!storage_pool.name().unwrap_or_default().is_empty());
+                    assert!(!storage_pool.uuid_string().unwrap_or_default().is_empty());
+                    assert!(storage_pool.uuid().is_ok());
+                    assert!(!storage_pool.xml_desc(0).unwrap_or_default().is_empty());
                 }
                 Err(e) => panic!("{e}"),
             }
