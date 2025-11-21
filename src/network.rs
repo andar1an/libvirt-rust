@@ -83,7 +83,7 @@ impl Network {
         self.ptr
     }
 
-    pub fn get_connect(&self) -> Result<Connect, Error> {
+    pub fn connect(&self) -> Result<Connect, Error> {
         let ptr = unsafe { sys::virNetworkGetConnect(self.as_ptr()) };
         if ptr.is_null() {
             return Err(Error::last_error());
@@ -96,7 +96,7 @@ impl Network {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
-    pub fn get_name(&self) -> Result<String, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virNetworkGetName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -104,7 +104,7 @@ impl Network {
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    pub fn get_uuid(&self) -> Result<Uuid, Error> {
+    pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
         let ret = unsafe { sys::virNetworkGetUUID(self.as_ptr(), uuid.as_mut_ptr()) };
@@ -114,7 +114,7 @@ impl Network {
         Ok(Uuid::from_bytes(uuid))
     }
 
-    pub fn get_uuid_string(&self) -> Result<String, Error> {
+    pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
         let ret = unsafe { sys::virNetworkGetUUIDString(self.as_ptr(), uuid.as_mut_ptr()) };
@@ -124,7 +124,7 @@ impl Network {
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
-    pub fn get_bridge_name(&self) -> Result<String, Error> {
+    pub fn bridge_name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virNetworkGetBridgeName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -132,7 +132,7 @@ impl Network {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
-    pub fn get_xml_desc(&self, flags: sys::virNetworkXMLFlags) -> Result<String, Error> {
+    pub fn xml_desc(&self, flags: sys::virNetworkXMLFlags) -> Result<String, Error> {
         let xml = unsafe { sys::virNetworkGetXMLDesc(self.as_ptr(), flags) };
         if xml.is_null() {
             return Err(Error::last_error());
@@ -180,7 +180,7 @@ impl Network {
         Ok(ret == 1)
     }
 
-    pub fn get_autostart(&self) -> Result<bool, Error> {
+    pub fn autostart(&self) -> Result<bool, Error> {
         let mut auto = 0;
         let ret = unsafe { sys::virNetworkGetAutostart(self.as_ptr(), &mut auto) };
         if ret == -1 {
