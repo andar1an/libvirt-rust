@@ -106,7 +106,7 @@ impl StorageVol {
         self.ptr
     }
 
-    pub fn get_connect(&self) -> Result<Connect, Error> {
+    pub fn connect(&self) -> Result<Connect, Error> {
         let ptr = unsafe { sys::virStorageVolGetConnect(self.as_ptr()) };
         if ptr.is_null() {
             return Err(Error::last_error());
@@ -163,7 +163,7 @@ impl StorageVol {
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
-    pub fn get_name(&self) -> Result<String, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virStorageVolGetName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -171,7 +171,7 @@ impl StorageVol {
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    pub fn get_key(&self) -> Result<String, Error> {
+    pub fn key(&self) -> Result<String, Error> {
         let n = unsafe { sys::virStorageVolGetKey(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -179,7 +179,7 @@ impl StorageVol {
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    pub fn get_path(&self) -> Result<String, Error> {
+    pub fn path(&self) -> Result<String, Error> {
         let n = unsafe { sys::virStorageVolGetPath(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -187,7 +187,7 @@ impl StorageVol {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
-    pub fn get_xml_desc(&self, flags: u32) -> Result<String, Error> {
+    pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = unsafe { sys::virStorageVolGetXMLDesc(self.as_ptr(), flags) };
         if xml.is_null() {
             return Err(Error::last_error());
@@ -243,7 +243,7 @@ impl StorageVol {
         Ok(ret as u32)
     }
 
-    pub fn get_info(&self) -> Result<StorageVolInfo, Error> {
+    pub fn info(&self) -> Result<StorageVolInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let res = unsafe { sys::virStorageVolGetInfo(self.as_ptr(), pinfo.as_mut_ptr()) };
         if res == -1 {
@@ -252,7 +252,7 @@ impl StorageVol {
         Ok(unsafe { StorageVolInfo::from_ptr(&mut pinfo.assume_init()) })
     }
 
-    pub fn get_info_flags(&self, flags: u32) -> Result<StorageVolInfo, Error> {
+    pub fn info_flags(&self, flags: u32) -> Result<StorageVolInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let res = unsafe {
             sys::virStorageVolGetInfoFlags(self.as_ptr(), pinfo.as_mut_ptr(), flags as libc::c_uint)

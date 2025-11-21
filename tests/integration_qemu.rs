@@ -51,16 +51,10 @@ fn test_create_storage_pool_and_vols() {
     assert_eq!(Ok(0), p.create(0));
     assert_eq!(Ok(String::from("libvirt-rs-test-create")), p.name());
     let v = common::build_storage_vol(&p, "vol1", 8);
-    assert_eq!(Ok(String::from("vol1")), v.get_name());
-    assert_eq!(
-        Ok(String::from("/var/lib/libvirt/images/vol1")),
-        v.get_path()
-    );
-    assert_eq!(
-        Ok(String::from("/var/lib/libvirt/images/vol1")),
-        v.get_key()
-    );
-    if let Ok(info) = v.get_info() {
+    assert_eq!(Ok(String::from("vol1")), v.name());
+    assert_eq!(Ok(String::from("/var/lib/libvirt/images/vol1")), v.path());
+    assert_eq!(Ok(String::from("/var/lib/libvirt/images/vol1")), v.key());
+    if let Ok(info) = v.info() {
         assert_eq!(0, info.kind);
         assert_eq!(8192, info.allocation);
         assert_eq!(8192, info.capacity);
@@ -71,7 +65,7 @@ fn test_create_storage_pool_and_vols() {
         panic!("should not be here")
     }
     assert_eq!(Ok(0), v.resize(10240, 0));
-    if let Ok(info) = v.get_info() {
+    if let Ok(info) = v.info() {
         assert_eq!(0, info.kind);
         assert_eq!(8192, info.allocation);
         assert_eq!(10240, info.capacity);
