@@ -254,7 +254,7 @@ impl Connect {
         Connect { ptr }
     }
 
-    pub fn get_version() -> Result<u32, Error> {
+    pub fn version() -> Result<u32, Error> {
         let mut ver: libc::c_ulong = 0;
         let ret = unsafe { sys::virGetVersion(&mut ver, ptr::null(), ptr::null_mut()) };
         if ret == -1 {
@@ -356,7 +356,7 @@ impl Connect {
     /// but possibly expanded to a fully-qualified domain name via
     /// getaddrinfo).  If we are connected to a remote system, then
     /// this returns the hostname of the remote system.
-    pub fn get_hostname(&self) -> Result<String, Error> {
+    pub fn hostname(&self) -> Result<String, Error> {
         let n = unsafe { sys::virConnectGetHostname(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -364,7 +364,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
-    pub fn get_capabilities(&self) -> Result<String, Error> {
+    pub fn capabilities(&self) -> Result<String, Error> {
         let n = unsafe { sys::virConnectGetCapabilities(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -372,7 +372,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
-    pub fn get_lib_version(&self) -> Result<u32, Error> {
+    pub fn lib_version(&self) -> Result<u32, Error> {
         let mut ver: libc::c_ulong = 0;
         let ret = unsafe { sys::virConnectGetLibVersion(self.as_ptr(), &mut ver) };
         if ret == -1 {
@@ -381,7 +381,7 @@ impl Connect {
         Ok(ver as u32)
     }
 
-    pub fn get_type(&self) -> Result<String, Error> {
+    pub fn driver_type(&self) -> Result<String, Error> {
         let t = unsafe { sys::virConnectGetType(self.as_ptr()) };
         if t.is_null() {
             return Err(Error::last_error());
@@ -389,7 +389,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(t, nofree) })
     }
 
-    pub fn get_uri(&self) -> Result<String, Error> {
+    pub fn uri(&self) -> Result<String, Error> {
         let t = unsafe { sys::virConnectGetURI(self.as_ptr()) };
         if t.is_null() {
             return Err(Error::last_error());
@@ -397,7 +397,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(t) })
     }
 
-    pub fn get_sys_info(&self, flags: u32) -> Result<String, Error> {
+    pub fn sys_info(&self, flags: u32) -> Result<String, Error> {
         let sys = unsafe { sys::virConnectGetSysinfo(self.as_ptr(), flags as libc::c_uint) };
         if sys.is_null() {
             return Err(Error::last_error());
@@ -405,7 +405,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(sys) })
     }
 
-    pub fn get_max_vcpus(&self, domtype: Option<&str>) -> Result<u32, Error> {
+    pub fn max_vcpus(&self, domtype: Option<&str>) -> Result<u32, Error> {
         let type_buf = some_string_to_cstring!(domtype);
         let max = unsafe {
             sys::virConnectGetMaxVcpus(self.as_ptr(), some_cstring_to_c_chars!(type_buf))
@@ -416,7 +416,7 @@ impl Connect {
         Ok(max as u32)
     }
 
-    pub fn get_cpu_models_names(&self, arch: &str, flags: u32) -> Result<Vec<String>, Error> {
+    pub fn cpu_models_names(&self, arch: &str, flags: u32) -> Result<Vec<String>, Error> {
         let mut names: *mut *mut libc::c_char = ptr::null_mut();
         let arch_buf = CString::new(arch)?;
         let size = unsafe {
@@ -1012,10 +1012,10 @@ impl Connect {
     /// use virt::connect::Connect;
     ///
     /// let conn = Connect::open(Some("test:///default")).unwrap();
-    /// let hyp_version = conn.get_hyp_version().unwrap();
+    /// let hyp_version = conn.hyp_version().unwrap();
     /// assert_eq!(hyp_version, 2);
     /// ```
-    pub fn get_hyp_version(&self) -> Result<u32, Error> {
+    pub fn hyp_version(&self) -> Result<u32, Error> {
         let mut hyver: libc::c_ulong = 0;
         let ret = unsafe { sys::virConnectGetVersion(self.as_ptr(), &mut hyver) };
         if ret == -1 {
@@ -1039,7 +1039,7 @@ impl Connect {
         Ok(res as sys::virCPUCompareResult)
     }
 
-    pub fn get_free_memory(&self) -> Result<u64, Error> {
+    pub fn free_memory(&self) -> Result<u64, Error> {
         let res = unsafe { sys::virNodeGetFreeMemory(self.as_ptr()) };
         if res == 0 {
             return Err(Error::last_error());
@@ -1047,7 +1047,7 @@ impl Connect {
         Ok(res)
     }
 
-    pub fn get_node_info(&self) -> Result<NodeInfo, Error> {
+    pub fn node_info(&self) -> Result<NodeInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let res = unsafe { sys::virNodeGetInfo(self.as_ptr(), pinfo.as_mut_ptr()) };
         if res == -1 {
@@ -1124,7 +1124,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
-    pub fn get_domain_capabilities(
+    pub fn domain_capabilities(
         &self,
         emulatorbin: Option<&str>,
         arch: Option<&str>,
@@ -1152,7 +1152,7 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
-    pub fn get_all_domain_stats(
+    pub fn all_domain_stats(
         &self,
         stats: u32,
         flags: u32,
@@ -1229,15 +1229,11 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
-    /// Connect.get_cells_free_memory should be used to get
+    /// Connect.cells_free_memory should be used to get
     /// information on free memory on individual NUMA nodes, starting
     /// with `start_cell` and consecutive `max_cells`. Continuous NUMA
     /// node IDs are expected. Returned values are in bytes.
-    pub fn get_cells_free_memory(
-        &self,
-        start_cell: i32,
-        max_cells: i32,
-    ) -> Result<Vec<u64>, Error> {
+    pub fn cells_free_memory(&self, start_cell: i32, max_cells: i32) -> Result<Vec<u64>, Error> {
         let mut free_mems: Vec<libc::c_ulonglong> = Vec::with_capacity(max_cells as usize);
         let size: i32 = unsafe {
             sys::virNodeGetCellsFreeMemory(
@@ -1261,7 +1257,7 @@ impl Connect {
         Ok(array)
     }
 
-    /// Connect.get_free_pages should be used to get information on free memory
+    /// Connect.free_pages should be used to get information on free memory
     /// pages of size `pages` (in KiB) on individual `cell_count` NUMA nodes
     /// starting with `start_cell. Returned is a vector of free page counts for
     /// each NUMA node consecutively.
@@ -1272,9 +1268,9 @@ impl Connect {
     /// use virt::connect::Connect;
     ///
     /// let conn = Connect::open(Some("test:///default")).unwrap();
-    /// let free_pages = conn.get_free_pages(&[4, 8, 2048, 1024 * 1024], 0, 2, 0);
+    /// let free_pages = conn.free_pages(&[4, 8, 2048, 1024 * 1024], 0, 2, 0);
     /// ```
-    pub fn get_free_pages(
+    pub fn free_pages(
         &self,
         pages: &[u32],
         start_cell: u32,
@@ -1474,7 +1470,7 @@ impl Connect {
         Ok(())
     }
 
-    pub fn save_image_get_xml_desc(&self, file: &str, flags: u32) -> Result<String, Error> {
+    pub fn save_image_xml_desc(&self, file: &str, flags: u32) -> Result<String, Error> {
         let file_buf = CString::new(file)?;
         let ptr = unsafe {
             sys::virDomainSaveImageGetXMLDesc(

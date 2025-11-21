@@ -22,7 +22,7 @@ use virt::connect::Connect;
 
 #[test]
 fn test_version() {
-    let version = Connect::get_version().unwrap_or(0);
+    let version = Connect::version().unwrap_or(0);
     assert!(version != 0, "Version was 0")
 }
 
@@ -54,14 +54,14 @@ fn test_connection_invalid() {
 #[test]
 fn test_get_type() {
     let c = common::conn();
-    assert!(!c.get_type().unwrap_or_default().is_empty());
+    assert!(!c.driver_type().unwrap_or_default().is_empty());
     common::close(c)
 }
 
 #[test]
 fn test_get_uri() {
     let c = common::conn();
-    assert_eq!("test:///default", c.get_uri().unwrap_or_default());
+    assert_eq!("test:///default", c.uri().unwrap_or_default());
     common::close(c);
 }
 
@@ -96,7 +96,7 @@ fn test_is_secure() {
 fn test_capabilities() {
     let c = common::conn();
     assert!(
-        "" != c.get_capabilities().unwrap_or_default(),
+        "" != c.capabilities().unwrap_or_default(),
         "Capabilities should not be empty"
     );
     common::close(c);
@@ -108,7 +108,7 @@ fn test_domain_capabilities() {
 
     /* Libvirt's test driver implemented domcaps in 9.8.0. Allow test to
      * run gracefully on older versions. */
-    match c.get_domain_capabilities(None, None, None, None, 0) {
+    match c.domain_capabilities(None, None, None, None, 0) {
         Ok(domcaps) => assert!(
             !domcaps.is_empty(),
             "Domain capabilities should not be empty"
@@ -126,7 +126,7 @@ fn test_domain_capabilities() {
 #[test]
 fn test_get_node_info() {
     let c = common::conn();
-    match c.get_node_info() {
+    match c.node_info() {
         Ok(info) => assert_eq!("i686", info.model),
         Err(_) => panic!("should have a node info"),
     }
@@ -136,7 +136,7 @@ fn test_get_node_info() {
 #[test]
 fn test_hostname() {
     let c = common::conn();
-    assert!(!c.get_hostname().unwrap_or_default().is_empty());
+    assert!(!c.hostname().unwrap_or_default().is_empty());
     common::close(c);
 }
 
@@ -145,7 +145,7 @@ fn test_hostname() {
 fn test_get_free_memory() {
     let c = common::conn();
     assert!(
-        0 != c.get_free_memory().unwrap_or(0),
+        0 != c.free_memory().unwrap_or(0),
         "Version was 0");
     common::close(c);
 }
@@ -154,7 +154,7 @@ fn test_get_free_memory() {
 #[test]
 fn test_lib_version() {
     let c = common::conn();
-    assert!(0 != c.get_lib_version().unwrap_or(0), "Version was 0");
+    assert!(0 != c.lib_version().unwrap_or(0), "Version was 0");
     common::close(c);
 }
 
@@ -211,7 +211,7 @@ fn test_list_all_domains() {
 #[test]
 fn test_get_cpu_models_names() {
     let c = common::conn();
-    let mcpus = c.get_cpu_models_names("i686", 0).unwrap_or(vec![]);
+    let mcpus = c.cpu_models_names("i686", 0).unwrap_or(vec![]);
     assert!(0 < mcpus.len(), "At least one cpu model should exist");
     common::close(c);
 }
@@ -220,7 +220,7 @@ fn test_get_cpu_models_names() {
 #[test]
 fn test_get_max_vcpus() {
     let c = common::conn();
-    let m = c.get_max_vcpus(None).unwrap_or(0);
+    let m = c.max_vcpus(None).unwrap_or(0);
     assert!(0 < m, "At least one cpu should exist");
     common::close(c);
 }
@@ -228,7 +228,7 @@ fn test_get_max_vcpus() {
 #[test]
 fn test_get_cells_free_memory() {
     let c = common::conn();
-    let free = c.get_cells_free_memory(0, 2).unwrap_or_default();
+    let free = c.cells_free_memory(0, 2).unwrap_or_default();
     assert!(free.len() == 2, "Expected two NUMA nodes");
     assert!(free[0] == 2097152, "Invalid free pages for NUMA node 0");
     assert!(free[1] == 4194304, "Invalid free pages for NUMA node 1");

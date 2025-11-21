@@ -29,8 +29,8 @@ use virt::error::{clear_error_callback, Error};
 use virt::sys;
 
 fn show_hypervisor_info(conn: &Connect) -> Result<(), Error> {
-    if let Ok(hv_type) = conn.get_type() {
-        if let Ok(mut hv_ver) = conn.get_hyp_version() {
+    if let Ok(hv_type) = conn.driver_type() {
+        if let Ok(mut hv_ver) = conn.hyp_version() {
             let major = hv_ver / 1000000;
             hv_ver %= 1000000;
             let minor = hv_ver / 1000;
@@ -142,7 +142,7 @@ fn main() {
         Err(e) => panic!("No connection to hypervisor: {e}"),
     };
 
-    match conn.get_uri() {
+    match conn.uri() {
         Ok(u) => println!("Connected to hypervisor at '{u}'"),
         Err(e) => {
             disconnect(conn);
