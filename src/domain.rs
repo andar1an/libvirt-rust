@@ -1474,7 +1474,7 @@ impl Domain {
 
     pub fn max_vcpus(&self) -> Result<u64, Error> {
         let ret = unsafe { sys::virDomainGetMaxVcpus(self.as_ptr()) };
-        if ret == 0 {
+        if ret == -1 {
             return Err(Error::last_error());
         }
         Ok(ret as u64)
