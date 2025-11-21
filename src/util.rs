@@ -8,7 +8,6 @@ pub fn c_ulong_to_u64(val: ::libc::c_ulong) -> u64 {
     val as u64
 }
 
-#[allow(unused_macros)]
 macro_rules! check_null {
     ($e:expr) => {{
         let ptr = $e;
@@ -20,7 +19,6 @@ macro_rules! check_null {
     }};
 }
 
-#[allow(unused_macros)]
 macro_rules! check_neg {
     ($e:expr) => {{
         let ret = $e;
@@ -32,7 +30,6 @@ macro_rules! check_neg {
     }};
 }
 
-#[allow(unused_macros)]
 macro_rules! check_zero {
     ($e:expr) => {{
         let ret = $e;
@@ -44,9 +41,6 @@ macro_rules! check_zero {
     }};
 }
 
-#[allow(unused_imports)]
 pub(crate) use check_neg;
-#[allow(unused_imports)]
 pub(crate) use check_null;
-#[allow(unused_imports)]
 pub(crate) use check_zero;

@@ -32,7 +32,7 @@ use crate::nwfilter::NWFilter;
 use crate::secret::Secret;
 use crate::storage_pool::StoragePool;
 use crate::storage_vol::StorageVol;
-use crate::util::c_ulong_to_u64;
+use crate::util::{c_ulong_to_u64, check_neg, check_null, check_zero};
 
 extern "C" fn connect_callback(
     ccreds: sys::virConnectCredentialPtr,
@@ -190,9 +190,7 @@ pub struct Connect {
 
 impl Drop for Connect {
     fn drop(&mut self) {
-        let ret = unsafe { sys::virConnectClose(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virConnectClose(self.as_ptr()) }) {
             panic!("Unable to drop reference on connection: {e}")
         }
     }
@@ -220,12 +218,10 @@ impl Clone for Connect {
     /// // conn1 implicitly dropped when leaving scope
     /// ````
     fn clone(&self) -> Self {
-        let ret = unsafe { sys::virConnectRef(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
-            panic!("Unable to add reference on connection: {e}")
+        match check_neg!(unsafe { sys::virConnectRef(self.as_ptr()) }) {
+            Err(e) => panic!("Unable to add reference on connection: {e}"),
+            Ok(_) => unsafe { Connect::from_ptr(self.as_ptr()) },
         }
-        unsafe { Connect::from_ptr(self.as_ptr()) }
     }
 }
 
@@ -256,10 +252,7 @@ impl Connect {
 
     pub fn version() -> Result<u32, Error> {
         let mut ver: libc::c_ulong = 0;
-        let ret = unsafe { sys::virGetVersion(&mut ver, ptr::null(), ptr::null_mut()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virGetVersion(&mut ver, ptr::null(), ptr::null_mut()) })?;
         Ok(ver as u32)
     }
 
@@ -293,10 +286,7 @@ impl Connect {
     /// ```
     pub fn open(uri: Option<&str>) -> Result<Connect, Error> {
         let uri_buf = some_string_to_cstring!(uri);
-        let c = unsafe { sys::virConnectOpen(some_cstring_to_c_chars!(uri_buf)) };
-        if c.is_null() {
-            return Err(Error::last_error());
-        }
+        let c = check_null!(unsafe { sys::virConnectOpen(some_cstring_to_c_chars!(uri_buf)) })?;
         Ok(unsafe { Connect::from_ptr(c) })
     }
 
@@ -312,10 +302,8 @@ impl Connect {
     /// [`open()`]: Connect::open
     pub fn open_read_only(uri: Option<&str>) -> Result<Connect, Error> {
         let uri_buf = some_string_to_cstring!(uri);
-        let c = unsafe { sys::virConnectOpenReadOnly(some_cstring_to_c_chars!(uri_buf)) };
-        if c.is_null() {
-            return Err(Error::last_error());
-        }
+        let c =
+            check_null!(unsafe { sys::virConnectOpenReadOnly(some_cstring_to_c_chars!(uri_buf)) })?;
         Ok(unsafe { Connect::from_ptr(c) })
     }
 
@@ -338,16 +326,13 @@ impl Connect {
                 cbdata: auth.callback as *mut _,
         };
         let uri_buf = some_string_to_cstring!(uri);
-        let c = unsafe {
+        let c = check_null!(unsafe {
             sys::virConnectOpenAuth(
                 some_cstring_to_c_chars!(uri_buf),
                 &mut cauth,
                 flags as libc::c_uint,
             )
-        };
-        if c.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { Connect::from_ptr(c) })
     }
 
@@ -357,79 +342,57 @@ impl Connect {
     /// getaddrinfo).  If we are connected to a remote system, then
     /// this returns the hostname of the remote system.
     pub fn hostname(&self) -> Result<String, Error> {
-        let n = unsafe { sys::virConnectGetHostname(self.as_ptr()) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe { sys::virConnectGetHostname(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
     pub fn capabilities(&self) -> Result<String, Error> {
-        let n = unsafe { sys::virConnectGetCapabilities(self.as_ptr()) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe { sys::virConnectGetCapabilities(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
     pub fn lib_version(&self) -> Result<u32, Error> {
         let mut ver: libc::c_ulong = 0;
-        let ret = unsafe { sys::virConnectGetLibVersion(self.as_ptr(), &mut ver) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virConnectGetLibVersion(self.as_ptr(), &mut ver) })?;
         Ok(ver as u32)
     }
 
     pub fn driver_type(&self) -> Result<String, Error> {
-        let t = unsafe { sys::virConnectGetType(self.as_ptr()) };
-        if t.is_null() {
-            return Err(Error::last_error());
-        }
+        let t = check_null!(unsafe { sys::virConnectGetType(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(t, nofree) })
     }
 
     pub fn uri(&self) -> Result<String, Error> {
-        let t = unsafe { sys::virConnectGetURI(self.as_ptr()) };
-        if t.is_null() {
-            return Err(Error::last_error());
-        }
+        let t = check_null!(unsafe { sys::virConnectGetURI(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(t) })
     }
 
     pub fn sys_info(&self, flags: u32) -> Result<String, Error> {
-        let sys = unsafe { sys::virConnectGetSysinfo(self.as_ptr(), flags as libc::c_uint) };
-        if sys.is_null() {
-            return Err(Error::last_error());
-        }
+        let sys = check_null!(unsafe {
+            sys::virConnectGetSysinfo(self.as_ptr(), flags as libc::c_uint)
+        })?;
         Ok(unsafe { c_chars_to_string!(sys) })
     }
 
     pub fn max_vcpus(&self, domtype: Option<&str>) -> Result<u32, Error> {
         let type_buf = some_string_to_cstring!(domtype);
-        let max = unsafe {
+        let max = check_neg!(unsafe {
             sys::virConnectGetMaxVcpus(self.as_ptr(), some_cstring_to_c_chars!(type_buf))
-        };
-        if max == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(max as u32)
     }
 
     pub fn cpu_models_names(&self, arch: &str, flags: u32) -> Result<Vec<String>, Error> {
         let mut names: *mut *mut libc::c_char = ptr::null_mut();
         let arch_buf = CString::new(arch)?;
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectGetCPUModelNames(
                 self.as_ptr(),
                 arch_buf.as_ptr(),
                 &mut names,
                 flags as libc::c_uint,
             )
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
 
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as isize {
@@ -441,26 +404,17 @@ impl Connect {
     }
 
     pub fn is_alive(&self) -> Result<bool, Error> {
-        let t = unsafe { sys::virConnectIsAlive(self.as_ptr()) };
-        if t == -1 {
-            return Err(Error::last_error());
-        }
+        let t = check_neg!(unsafe { sys::virConnectIsAlive(self.as_ptr()) })?;
         Ok(t == 1)
     }
 
     pub fn is_encrypted(&self) -> Result<bool, Error> {
-        let t = unsafe { sys::virConnectIsEncrypted(self.as_ptr()) };
-        if t == -1 {
-            return Err(Error::last_error());
-        }
+        let t = check_neg!(unsafe { sys::virConnectIsEncrypted(self.as_ptr()) })?;
         Ok(t == 1)
     }
 
     pub fn is_secure(&self) -> Result<bool, Error> {
-        let t = unsafe { sys::virConnectIsSecure(self.as_ptr()) };
-        if t == -1 {
-            return Err(Error::last_error());
-        }
+        let t = check_neg!(unsafe { sys::virConnectIsSecure(self.as_ptr()) })?;
         Ok(t == 1)
     }
 
@@ -478,11 +432,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_domains(&self) -> Result<Vec<u32>, Error> {
         let mut ids: [libc::c_int; 512] = [0; 512];
-        let size = unsafe { sys::virConnectListDomains(self.as_ptr(), ids.as_mut_ptr(), 512) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListDomains(self.as_ptr(), ids.as_mut_ptr(), 512)
+        })?;
         let mut array: Vec<u32> = Vec::new();
         for x in 0..size as usize {
             array.push(ids[x] as u32);
@@ -504,12 +456,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_interfaces(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size =
-            unsafe { sys::virConnectListInterfaces(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListInterfaces(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -531,11 +480,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_networks(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size = unsafe { sys::virConnectListNetworks(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListNetworks(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -546,11 +493,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_nw_filters(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size = unsafe { sys::virConnectListNWFilters(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListNWFilters(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -561,11 +506,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_secrets(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size = unsafe { sys::virConnectListSecrets(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListSecrets(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -587,12 +530,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_storage_pools(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size =
-            unsafe { sys::virConnectListStoragePools(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListStoragePools(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -605,13 +545,9 @@ impl Connect {
         flags: sys::virConnectListAllDomainsFlags,
     ) -> Result<Vec<Domain>, Error> {
         let mut domains: *mut sys::virDomainPtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListAllDomains(self.as_ptr(), &mut domains, flags as libc::c_uint)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<Domain> = Vec::new();
         for x in 0..size as isize {
             array.push(unsafe { Domain::from_ptr(*domains.offset(x)) });
@@ -626,13 +562,9 @@ impl Connect {
         flags: sys::virConnectListAllNetworksFlags,
     ) -> Result<Vec<Network>, Error> {
         let mut networks: *mut sys::virNetworkPtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListAllNetworks(self.as_ptr(), &mut networks, flags as libc::c_uint)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<Network> = Vec::new();
         for x in 0..size as isize {
             array.push(unsafe { Network::from_ptr(*networks.offset(x)) });
@@ -647,13 +579,9 @@ impl Connect {
         flags: sys::virConnectListAllInterfacesFlags,
     ) -> Result<Vec<Interface>, Error> {
         let mut interfaces: *mut sys::virInterfacePtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListAllInterfaces(self.as_ptr(), &mut interfaces, flags as libc::c_uint)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<Interface> = Vec::new();
         for x in 0..size as isize {
             array.push(unsafe { Interface::from_ptr(*interfaces.offset(x)) });
@@ -668,13 +596,9 @@ impl Connect {
         flags: sys::virConnectListAllNodeDeviceFlags,
     ) -> Result<Vec<NodeDevice>, Error> {
         let mut nodedevs: *mut sys::virNodeDevicePtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListAllNodeDevices(self.as_ptr(), &mut nodedevs, flags as libc::c_uint)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<NodeDevice> = Vec::new();
         for x in 0..size as isize {
             array.push(unsafe { NodeDevice::from_ptr(*nodedevs.offset(x)) });
@@ -689,13 +613,9 @@ impl Connect {
         flags: sys::virConnectListAllSecretsFlags,
     ) -> Result<Vec<Secret>, Error> {
         let mut secrets: *mut sys::virSecretPtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListAllSecrets(self.as_ptr(), &mut secrets, flags as libc::c_uint)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<Secret> = Vec::new();
         for x in 0..size as isize {
             array.push(unsafe { Secret::from_ptr(*secrets.offset(x)) });
@@ -710,13 +630,9 @@ impl Connect {
         flags: sys::virConnectListAllStoragePoolsFlags,
     ) -> Result<Vec<StoragePool>, Error> {
         let mut storages: *mut sys::virStoragePoolPtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListAllStoragePools(self.as_ptr(), &mut storages, flags as libc::c_uint)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<StoragePool> = Vec::new();
         for x in 0..size as isize {
             array.push(unsafe { StoragePool::from_ptr(*storages.offset(x)) });
@@ -728,13 +644,9 @@ impl Connect {
 
     pub fn list_all_nw_filters(&self, flags: u32) -> Result<Vec<NWFilter>, Error> {
         let mut filters: *mut sys::virNWFilterPtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListAllNWFilters(self.as_ptr(), &mut filters, flags as libc::c_uint)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<NWFilter> = Vec::new();
         for x in 0..size as isize {
             array.push(unsafe { NWFilter::from_ptr(*filters.offset(x)) });
@@ -758,12 +670,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_domains(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size =
-            unsafe { sys::virConnectListDefinedDomains(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListDefinedDomains(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -785,13 +694,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_interfaces(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListDefinedInterfaces(self.as_ptr(), names.as_mut_ptr(), 1024)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -813,13 +718,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_storage_pools(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectListDefinedStoragePools(self.as_ptr(), names.as_mut_ptr(), 1024)
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -841,12 +742,9 @@ impl Connect {
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_networks(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
-        let size =
-            unsafe { sys::virConnectListDefinedNetworks(self.as_ptr(), names.as_mut_ptr(), 1024) };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
-
+        let size = check_neg!(unsafe {
+            sys::virConnectListDefinedNetworks(self.as_ptr(), names.as_mut_ptr(), 1024)
+        })?;
         let mut array: Vec<String> = Vec::new();
         for x in 0..size as usize {
             array.push(unsafe { c_chars_to_string!(names[x]) });
@@ -864,10 +762,7 @@ impl Connect {
     /// assert_eq!(num_domains, 1);
     /// ```
     pub fn num_of_domains(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfDomains(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfDomains(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -881,10 +776,7 @@ impl Connect {
     /// assert_eq!(num_ifaces, 1);
     /// ```
     pub fn num_of_interfaces(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfInterfaces(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfInterfaces(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -898,10 +790,7 @@ impl Connect {
     /// assert_eq!(num_networks, 1);
     /// ```
     pub fn num_of_networks(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfNetworks(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfNetworks(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -915,26 +804,17 @@ impl Connect {
     /// assert_eq!(num_pools, 1);
     /// ```
     pub fn num_of_storage_pools(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfStoragePools(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfStoragePools(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
     pub fn num_of_nw_filters(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfNWFilters(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfNWFilters(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
     pub fn num_of_secrets(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfSecrets(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfSecrets(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -948,10 +828,7 @@ impl Connect {
     /// assert_eq!(num_domains, 0);
     /// ```
     pub fn num_of_defined_domains(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfDefinedDomains(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfDefinedDomains(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -965,10 +842,7 @@ impl Connect {
     /// assert_eq!(num_ifaces, 0);
     /// ```
     pub fn num_of_defined_interfaces(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfDefinedInterfaces(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfDefinedInterfaces(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -982,10 +856,7 @@ impl Connect {
     /// assert_eq!(num_networks, 0);
     /// ```
     pub fn num_of_defined_networks(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfDefinedNetworks(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfDefinedNetworks(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -999,10 +870,7 @@ impl Connect {
     /// assert_eq!(num_pools, 0);
     /// ```
     pub fn num_of_defined_storage_pools(&self) -> Result<u32, Error> {
-        let num = unsafe { sys::virConnectNumOfDefinedStoragePools(self.as_ptr()) };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        let num = check_neg!(unsafe { sys::virConnectNumOfDefinedStoragePools(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
@@ -1017,10 +885,7 @@ impl Connect {
     /// ```
     pub fn hyp_version(&self) -> Result<u32, Error> {
         let mut hyver: libc::c_ulong = 0;
-        let ret = unsafe { sys::virConnectGetVersion(self.as_ptr(), &mut hyver) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virConnectGetVersion(self.as_ptr(), &mut hyver) })?;
         Ok(hyver as u32)
     }
 
@@ -1030,29 +895,20 @@ impl Connect {
         flags: sys::virConnectCompareCPUFlags,
     ) -> Result<sys::virCPUCompareResult, Error> {
         let xml_buf = CString::new(xml)?;
-        let res = unsafe {
+        let res = check_neg!(unsafe {
             sys::virConnectCompareCPU(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if res == sys::VIR_CPU_COMPARE_ERROR {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(res as sys::virCPUCompareResult)
     }
 
     pub fn free_memory(&self) -> Result<u64, Error> {
-        let res = unsafe { sys::virNodeGetFreeMemory(self.as_ptr()) };
-        if res == 0 {
-            return Err(Error::last_error());
-        }
+        let res = check_zero!(unsafe { sys::virNodeGetFreeMemory(self.as_ptr()) })?;
         Ok(res)
     }
 
     pub fn node_info(&self) -> Result<NodeInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
-        let res = unsafe { sys::virNodeGetInfo(self.as_ptr(), pinfo.as_mut_ptr()) };
-        if res == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virNodeGetInfo(self.as_ptr(), pinfo.as_mut_ptr()) })?;
         let pinfo = unsafe { pinfo.assume_init() };
         Ok(NodeInfo {
             model: unsafe { c_chars_to_string!(pinfo.model.as_ptr(), nofree) },
@@ -1067,16 +923,13 @@ impl Connect {
     }
 
     pub fn set_keep_alive(&self, interval: i32, count: u32) -> Result<(), Error> {
-        let ret = unsafe {
+        let _ = check_neg!(unsafe {
             sys::virConnectSetKeepAlive(
                 self.as_ptr(),
                 interval as libc::c_int,
                 count as libc::c_uint,
             )
-        };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(())
     }
 
@@ -1088,17 +941,14 @@ impl Connect {
     ) -> Result<String, Error> {
         let nformat_buf = CString::new(nformat)?;
         let nconfig_buf = CString::new(nconfig)?;
-        let ret = unsafe {
+        let ret = check_null!(unsafe {
             sys::virConnectDomainXMLFromNative(
                 self.as_ptr(),
                 nformat_buf.as_ptr(),
                 nconfig_buf.as_ptr(),
                 flags as libc::c_uint,
             )
-        };
-        if ret.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
@@ -1110,17 +960,14 @@ impl Connect {
     ) -> Result<String, Error> {
         let nformat_buf = CString::new(nformat)?;
         let dxml_buf = CString::new(dxml)?;
-        let ret = unsafe {
+        let ret = check_null!(unsafe {
             sys::virConnectDomainXMLToNative(
                 self.as_ptr(),
                 nformat_buf.as_ptr(),
                 dxml_buf.as_ptr(),
                 flags as libc::c_uint,
             )
-        };
-        if ret.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
@@ -1136,7 +983,7 @@ impl Connect {
         let arch_buf = some_string_to_cstring!(arch);
         let machine_buf = some_string_to_cstring!(machine);
         let virttype_buf = some_string_to_cstring!(virttype);
-        let ret = unsafe {
+        let ret = check_null!(unsafe {
             sys::virConnectGetDomainCapabilities(
                 self.as_ptr(),
                 some_cstring_to_c_chars!(emulatorbin_buf),
@@ -1145,10 +992,7 @@ impl Connect {
                 some_cstring_to_c_chars!(virttype_buf),
                 flags as libc::c_uint,
             )
-        };
-        if ret.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
@@ -1158,17 +1002,14 @@ impl Connect {
         flags: u32,
     ) -> Result<Vec<DomainStatsRecord>, Error> {
         let mut record: *mut sys::virDomainStatsRecordPtr = ptr::null_mut();
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virConnectGetAllDomainStats(
                 self.as_ptr(),
                 stats as libc::c_uint,
                 &mut record,
                 flags as libc::c_uint,
             )
-        };
-        if size == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
 
         let mut array: Vec<DomainStatsRecord> = Vec::new();
         for x in 0..size as isize {
@@ -1193,17 +1034,14 @@ impl Connect {
             xcpus_buf.push(cstring.as_ptr());
             xcpus.push(cstring);
         }
-        let ret = unsafe {
+        let ret = check_null!(unsafe {
             sys::virConnectBaselineCPU(
                 self.as_ptr(),
                 xcpus_buf.as_mut_ptr(),
                 xmlcpus.len() as libc::c_uint,
                 flags as libc::c_uint,
             )
-        };
-        if ret.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
@@ -1215,17 +1053,14 @@ impl Connect {
     ) -> Result<String, Error> {
         let kind_buf = CString::new(kind)?;
         let spec_buf = some_string_to_cstring!(spec);
-        let n = unsafe {
+        let n = check_null!(unsafe {
             sys::virConnectFindStoragePoolSources(
                 self.as_ptr(),
                 kind_buf.as_ptr(),
                 some_cstring_to_c_chars!(spec_buf),
                 flags as libc::c_uint,
             )
-        };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
@@ -1235,17 +1070,14 @@ impl Connect {
     /// node IDs are expected. Returned values are in bytes.
     pub fn cells_free_memory(&self, start_cell: i32, max_cells: i32) -> Result<Vec<u64>, Error> {
         let mut free_mems: Vec<libc::c_ulonglong> = Vec::with_capacity(max_cells as usize);
-        let size: i32 = unsafe {
+        let size: i32 = check_neg!(unsafe {
             sys::virNodeGetCellsFreeMemory(
                 self.as_ptr(),
                 free_mems.as_mut_ptr(),
                 start_cell as libc::c_int,
                 max_cells as libc::c_int,
             )
-        };
-        if size < 0 {
-            return Err(Error::last_error());
-        }
+        })?;
 
         unsafe { free_mems.set_len(size as usize) };
 
@@ -1280,7 +1112,7 @@ impl Connect {
         let nentries = cell_count as usize * pages.len();
         let mut counts = vec![0; nentries];
 
-        let size = unsafe {
+        let size = check_neg!(unsafe {
             sys::virNodeGetFreePages(
                 self.as_ptr(),
                 pages.len().try_into().unwrap(),
@@ -1290,10 +1122,7 @@ impl Connect {
                 counts.as_mut_ptr(),
                 flags,
             )
-        };
-        if size < 0 {
-            return Err(Error::last_error());
-        }
+        })?;
 
         counts.truncate(size.try_into().unwrap());
 
@@ -1302,64 +1131,52 @@ impl Connect {
 
     pub fn lookup_interface_by_name(&self, id: &str) -> Result<Interface, Error> {
         let id_buf = CString::new(id)?;
-        let ptr = unsafe { sys::virInterfaceLookupByName(self.as_ptr(), id_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virInterfaceLookupByName(self.as_ptr(), id_buf.as_ptr()) })?;
         Ok(unsafe { Interface::from_ptr(ptr) })
     }
 
     pub fn define_interface_xml(&self, xml: &str, flags: u32) -> Result<Interface, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virInterfaceDefineXML(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { Interface::from_ptr(ptr) })
     }
 
     pub fn lookup_interface_by_mac_string(&self, id: &str) -> Result<Interface, Error> {
         let id_buf = CString::new(id)?;
-        let ptr = unsafe { sys::virInterfaceLookupByMACString(self.as_ptr(), id_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virInterfaceLookupByMACString(self.as_ptr(), id_buf.as_ptr())
+        })?;
         Ok(unsafe { Interface::from_ptr(ptr) })
     }
 
     pub fn lookup_domain_by_id(&self, id: u32) -> Result<Domain, Error> {
-        let ptr = unsafe { sys::virDomainLookupByID(self.as_ptr(), id as libc::c_int) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virDomainLookupByID(self.as_ptr(), id as libc::c_int) })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
     pub fn lookup_domain_by_name(&self, id: &str) -> Result<Domain, Error> {
         let id_buf = CString::new(id)?;
-        let ptr = unsafe { sys::virDomainLookupByName(self.as_ptr(), id_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virDomainLookupByName(self.as_ptr(), id_buf.as_ptr()) })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
     pub fn lookup_domain_by_uuid(&self, uuid: Uuid) -> Result<Domain, Error> {
-        let ptr = unsafe { sys::virDomainLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virDomainLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
+        })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
     pub fn lookup_domain_by_uuid_string(&self, uuid: &str) -> Result<Domain, Error> {
         let uuid_buf = CString::new(uuid)?;
-        let ptr = unsafe { sys::virDomainLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virDomainLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr())
+        })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
@@ -1380,12 +1197,9 @@ impl Connect {
         flags: sys::virDomainCreateFlags,
     ) -> Result<Domain, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virDomainCreateXML(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
@@ -1404,10 +1218,7 @@ impl Connect {
     /// [`undefine()`]: Domain::undefine
     pub fn define_domain_xml(&self, xml: &str) -> Result<Domain, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe { sys::virDomainDefineXML(self.as_ptr(), xml_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe { sys::virDomainDefineXML(self.as_ptr(), xml_buf.as_ptr()) })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
@@ -1430,21 +1241,15 @@ impl Connect {
         flags: sys::virDomainDefineFlags,
     ) -> Result<Domain, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virDomainDefineXMLFlags(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
     pub fn restore_domain(&self, path: &str) -> Result<(), Error> {
         let path_buf = CString::new(path)?;
-        let ret = unsafe { sys::virDomainRestore(self.as_ptr(), path_buf.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virDomainRestore(self.as_ptr(), path_buf.as_ptr()) })?;
         Ok(())
     }
 
@@ -1456,102 +1261,83 @@ impl Connect {
     ) -> Result<(), Error> {
         let path_buf = CString::new(path)?;
         let dxml_buf = some_string_to_cstring!(dxml);
-        let ret = unsafe {
+        let _ = check_neg!(unsafe {
             sys::virDomainRestoreFlags(
                 self.as_ptr(),
                 path_buf.as_ptr(),
                 some_cstring_to_c_chars!(dxml_buf),
                 flags,
             )
-        };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(())
     }
 
     pub fn save_image_xml_desc(&self, file: &str, flags: u32) -> Result<String, Error> {
         let file_buf = CString::new(file)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virDomainSaveImageGetXMLDesc(
                 self.as_ptr(),
                 file_buf.as_ptr(),
                 flags as libc::c_uint,
             )
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { c_chars_to_string!(ptr) })
     }
 
     pub fn save_image_define_xml(&self, file: &str, dxml: &str, flags: u32) -> Result<(), Error> {
         let file_buf = CString::new(file)?;
         let dxml_buf = CString::new(dxml)?;
-        let ret = unsafe {
+        let _ = check_neg!(unsafe {
             sys::virDomainSaveImageDefineXML(
                 self.as_ptr(),
                 file_buf.as_ptr(),
                 dxml_buf.as_ptr(),
                 flags as libc::c_uint,
             )
-        };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(())
     }
 
     pub fn lookup_network_by_name(&self, id: &str) -> Result<Network, Error> {
         let id_buf = CString::new(id)?;
-        let ptr = unsafe { sys::virNetworkLookupByName(self.as_ptr(), id_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virNetworkLookupByName(self.as_ptr(), id_buf.as_ptr()) })?;
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
     pub fn lookup_network_by_uuid(&self, uuid: Uuid) -> Result<Network, Error> {
-        let ptr = unsafe { sys::virNetworkLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virNetworkLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
+        })?;
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
     pub fn lookup_network_by_uuid_string(&self, uuid: &str) -> Result<Network, Error> {
         let uuid_buf = CString::new(uuid)?;
-        let ptr = unsafe { sys::virNetworkLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virNetworkLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr())
+        })?;
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
     pub fn define_network_xml(&self, xml: &str) -> Result<Network, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe { sys::virNetworkDefineXML(self.as_ptr(), xml_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virNetworkDefineXML(self.as_ptr(), xml_buf.as_ptr()) })?;
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
     pub fn create_network_xml(&self, xml: &str) -> Result<Network, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe { sys::virNetworkCreateXML(self.as_ptr(), xml_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virNetworkCreateXML(self.as_ptr(), xml_buf.as_ptr()) })?;
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
     pub fn lookup_node_device_by_name(&self, id: &str) -> Result<NodeDevice, Error> {
         let id_buf = CString::new(id)?;
-        let ptr = unsafe { sys::virNodeDeviceLookupByName(self.as_ptr(), id_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virNodeDeviceLookupByName(self.as_ptr(), id_buf.as_ptr()) })?;
         Ok(unsafe { NodeDevice::from_ptr(ptr) })
     }
 
@@ -1563,132 +1349,106 @@ impl Connect {
     ) -> Result<NodeDevice, Error> {
         let wwnn_buf = CString::new(wwnn)?;
         let wwpn_buf = CString::new(wwpn)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virNodeDeviceLookupSCSIHostByWWN(
                 self.as_ptr(),
                 wwnn_buf.as_ptr(),
                 wwpn_buf.as_ptr(),
                 flags as libc::c_uint,
             )
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { NodeDevice::from_ptr(ptr) })
     }
 
     pub fn create_node_device_xml(&self, xml: &str, flags: u32) -> Result<NodeDevice, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virNodeDeviceCreateXML(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { NodeDevice::from_ptr(ptr) })
     }
 
     pub fn num_of_node_devices(&self, cap: Option<&str>, flags: u32) -> Result<u32, Error> {
         let cap_buf = some_string_to_cstring!(cap);
-        let num = unsafe {
+        let num = check_neg!(unsafe {
             sys::virNodeNumOfDevices(
                 self.as_ptr(),
                 some_cstring_to_c_chars!(cap_buf),
                 flags as libc::c_uint,
             )
-        };
-        if num == -1 {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(num as u32)
     }
 
     pub fn lookup_nwfilter_by_name(&self, id: &str) -> Result<NWFilter, Error> {
         let id_buf = CString::new(id)?;
-        let ptr = unsafe { sys::virNWFilterLookupByName(self.as_ptr(), id_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virNWFilterLookupByName(self.as_ptr(), id_buf.as_ptr()) })?;
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
     pub fn lookup_nwfilter_by_uuid(&self, uuid: Uuid) -> Result<NWFilter, Error> {
-        let ptr = unsafe { sys::virNWFilterLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virNWFilterLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
+        })?;
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
     pub fn lookup_nwfilter_by_uuid_string(&self, uuid: &str) -> Result<NWFilter, Error> {
         let uuid_buf = CString::new(uuid)?;
-        let ptr = unsafe { sys::virNWFilterLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virNWFilterLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr())
+        })?;
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
     pub fn define_nwfilter_xml(&self, xml: &str) -> Result<NWFilter, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe { sys::virNWFilterDefineXML(self.as_ptr(), xml_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virNWFilterDefineXML(self.as_ptr(), xml_buf.as_ptr()) })?;
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
     pub fn define_secret_xml(&self, xml: &str, flags: u32) -> Result<Secret, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virSecretDefineXML(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
     pub fn lookup_secret_by_uuid(&self, uuid: Uuid) -> Result<Secret, Error> {
-        let ptr = unsafe { sys::virSecretLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virSecretLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
+        })?;
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
     pub fn lookup_secret_by_uuid_string(&self, uuid: &str) -> Result<Secret, Error> {
         let uuid_buf = CString::new(uuid)?;
-        let ptr = unsafe { sys::virSecretLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virSecretLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr())
+        })?;
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
     pub fn lookup_secret_by_usage(&self, usagetype: i32, usageid: &str) -> Result<Secret, Error> {
         let usageid_buf = CString::new(usageid)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virSecretLookupByUsage(
                 self.as_ptr(),
                 usagetype as libc::c_int,
                 usageid_buf.as_ptr(),
             )
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
     pub fn define_storage_pool_xml(&self, xml: &str, flags: u32) -> Result<StoragePool, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virStoragePoolDefineXML(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
@@ -1698,68 +1458,55 @@ impl Connect {
         flags: sys::virStoragePoolCreateFlags,
     ) -> Result<StoragePool, Error> {
         let xml_buf = CString::new(xml)?;
-        let ptr = unsafe {
+        let ptr = check_null!(unsafe {
             sys::virStoragePoolCreateXML(self.as_ptr(), xml_buf.as_ptr(), flags as libc::c_uint)
-        };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        })?;
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
     pub fn lookup_storage_pool_by_name(&self, id: &str) -> Result<StoragePool, Error> {
         let id_buf = CString::new(id)?;
-        let ptr = unsafe { sys::virStoragePoolLookupByName(self.as_ptr(), id_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virStoragePoolLookupByName(self.as_ptr(), id_buf.as_ptr())
+        })?;
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
     pub fn lookup_storage_pool_by_target_path(&self, path: &str) -> Result<StoragePool, Error> {
         let path_buf = CString::new(path)?;
-        let ptr =
-            unsafe { sys::virStoragePoolLookupByTargetPath(self.as_ptr(), path_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virStoragePoolLookupByTargetPath(self.as_ptr(), path_buf.as_ptr())
+        })?;
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
     pub fn lookup_storage_pool_by_uuid(&self, uuid: Uuid) -> Result<StoragePool, Error> {
-        let ptr =
-            unsafe { sys::virStoragePoolLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virStoragePoolLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
+        })?;
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
     pub fn lookup_storage_pool_by_uuid_string(&self, uuid: &str) -> Result<StoragePool, Error> {
         let uuid_buf = CString::new(uuid)?;
-        let ptr =
-            unsafe { sys::virStoragePoolLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virStoragePoolLookupByUUIDString(self.as_ptr(), uuid_buf.as_ptr())
+        })?;
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
     pub fn lookup_storage_vol_by_key(&self, key: &str) -> Result<StorageVol, Error> {
         let key_buf = CString::new(key)?;
-        let ptr = unsafe { sys::virStorageVolLookupByKey(self.as_ptr(), key_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr =
+            check_null!(unsafe { sys::virStorageVolLookupByKey(self.as_ptr(), key_buf.as_ptr()) })?;
         Ok(unsafe { StorageVol::from_ptr(ptr) })
     }
 
     pub fn lookup_storage_vol_by_path(&self, path: &str) -> Result<StorageVol, Error> {
         let path_buf = CString::new(path)?;
-        let ptr = unsafe { sys::virStorageVolLookupByPath(self.as_ptr(), path_buf.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
+        let ptr = check_null!(unsafe {
+            sys::virStorageVolLookupByPath(self.as_ptr(), path_buf.as_ptr())
+        })?;
         Ok(unsafe { StorageVol::from_ptr(ptr) })
     }
 }
