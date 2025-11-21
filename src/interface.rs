@@ -18,6 +18,7 @@
 
 use crate::connect::Connect;
 use crate::error::Error;
+use crate::util::{check_neg, check_null};
 
 /// Provides APIs for the management of interfaces.
 ///
@@ -32,9 +33,7 @@ unsafe impl Sync for Interface {}
 
 impl Drop for Interface {
     fn drop(&mut self) {
-        let ret = unsafe { sys::virInterfaceFree(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virInterfaceFree(self.as_ptr()) }) {
             panic!("Unable to drop reference on interface: {e}")
         }
     }
@@ -46,12 +45,9 @@ impl Clone for Interface {
     /// Increments the internal reference counter on the given
     /// interface.
     fn clone(&self) -> Self {
-        let ret = unsafe { sys::virInterfaceRef(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virInterfaceRef(self.as_ptr()) }) {
             panic!("Unable to add reference on interface: {e}")
         }
-
         unsafe { Interface::from_ptr(self.as_ptr()) }
     }
 }
@@ -79,71 +75,45 @@ impl Interface {
     }
 
     pub fn connect(&self) -> Result<Connect, Error> {
-        let ptr = unsafe { sys::virInterfaceGetConnect(self.as_ptr()) };
-        if ptr.is_null() {
-            return Err(Error::last_error());
-        }
-        let ret = unsafe { sys::virConnectRef(ptr) };
-        if ret == -1 {
-            let e = Error::last_error();
+        let ptr = check_null!(unsafe { sys::virInterfaceGetConnect(self.as_ptr()) })?;
+        if let Err(e) = check_neg!(unsafe { sys::virConnectRef(ptr) }) {
             panic!("Unable to add reference on connection: {e}")
         }
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
     pub fn name(&self) -> Result<String, Error> {
-        let n = unsafe { sys::virInterfaceGetName(self.as_ptr()) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe { sys::virInterfaceGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
     pub fn mac_string(&self) -> Result<String, Error> {
-        let mac = unsafe { sys::virInterfaceGetMACString(self.as_ptr()) };
-        if mac.is_null() {
-            return Err(Error::last_error());
-        }
+        let mac = check_null!(unsafe { sys::virInterfaceGetMACString(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(mac, nofree) })
     }
 
     pub fn xml_desc(&self, flags: sys::virInterfaceXMLFlags) -> Result<String, Error> {
-        let xml = unsafe { sys::virInterfaceGetXMLDesc(self.as_ptr(), flags) };
-        if xml.is_null() {
-            return Err(Error::last_error());
-        }
+        let xml = check_null!(unsafe { sys::virInterfaceGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
     pub fn create(&self, flags: sys::virInterfaceXMLFlags) -> Result<(), Error> {
-        let ret = unsafe { sys::virInterfaceCreate(self.as_ptr(), flags) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virInterfaceCreate(self.as_ptr(), flags) })?;
         Ok(())
     }
 
     pub fn destroy(&self, flags: u32) -> Result<(), Error> {
-        let ret = unsafe { sys::virInterfaceDestroy(self.as_ptr(), flags) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virInterfaceDestroy(self.as_ptr(), flags) })?;
         Ok(())
     }
 
     pub fn undefine(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virInterfaceUndefine(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virInterfaceUndefine(self.as_ptr()) })?;
         Ok(())
     }
 
     pub fn is_active(&self) -> Result<bool, Error> {
-        let ret = unsafe { sys::virInterfaceIsActive(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let ret = check_neg!(unsafe { sys::virInterfaceIsActive(self.as_ptr()) })?;
         Ok(ret == 1)
     }
 }
