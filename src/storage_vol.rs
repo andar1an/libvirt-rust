@@ -110,6 +110,9 @@ impl StorageVol {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
+    /// Creates a new storage volume
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolCreateXML>
     pub fn create_xml(
         pool: &StoragePool,
         xml: &str,
@@ -122,6 +125,9 @@ impl StorageVol {
         Ok(unsafe { StorageVol::from_ptr(ptr) })
     }
 
+    /// Creates a new storage volume
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolCreateXMLFrom>
     pub fn create_xml_from(
         pool: &StoragePool,
         xml: &str,
@@ -140,43 +146,67 @@ impl StorageVol {
         Ok(unsafe { StorageVol::from_ptr(ptr) })
     }
 
+    /// Returns the storage pool for this volume
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolLookupByVolume>
     pub fn lookup_storage_pool(&self) -> Result<StoragePool, Error> {
         let ptr = check_null!(unsafe { sys::virStoragePoolLookupByVolume(self.as_ptr()) })?;
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
+    /// Returns the storage volume name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virStorageVolGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the storage volume key
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolGetKey>
     pub fn key(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virStorageVolGetKey(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the storage volume path
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolGetPath>
     pub fn path(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virStorageVolGetPath(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
+    /// Returns the storage volume XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolGetXMLDesc>
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = check_null!(unsafe { sys::virStorageVolGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
+    /// Deletes a storage volume
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolDelete>
     pub fn delete(&self, flags: u32) -> Result<(), Error> {
         let _ =
             check_neg!(unsafe { sys::virStorageVolDelete(self.as_ptr(), flags as libc::c_uint) })?;
         Ok(())
     }
 
+    /// Wipes a storage volume
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolWipe>
     pub fn wipe(&self, flags: u32) -> Result<(), Error> {
         let _ =
             check_neg!(unsafe { sys::virStorageVolWipe(self.as_ptr(), flags as libc::c_uint) })?;
         Ok(())
     }
 
+    /// Wipes a storage volume with a data pattern
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolWipePattern>
     pub fn wipe_pattern(
         &self,
         algo: sys::virStorageVolWipeAlgorithm,
@@ -192,6 +222,9 @@ impl StorageVol {
         Ok(())
     }
 
+    /// Resizes a storage volume
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolResize>
     pub fn resize(&self, capacity: u64, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virStorageVolResize(
@@ -203,6 +236,9 @@ impl StorageVol {
         Ok(())
     }
 
+    /// Returns the storage volume information
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolGetInfo>
     pub fn info(&self) -> Result<StorageVolInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let _ =
@@ -210,6 +246,9 @@ impl StorageVol {
         Ok(unsafe { StorageVolInfo::from_ptr(&mut pinfo.assume_init()) })
     }
 
+    /// Returns the storage volume information
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolGetInfoFlags>
     pub fn info_flags(&self, flags: u32) -> Result<StorageVolInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let _ = check_neg!(unsafe {
@@ -218,6 +257,9 @@ impl StorageVol {
         Ok(unsafe { StorageVolInfo::from_ptr(&mut pinfo.assume_init()) })
     }
 
+    /// Download data from a storage volume over a stream
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolDownload>
     pub fn download(
         &self,
         stream: &Stream,
@@ -237,6 +279,9 @@ impl StorageVol {
         Ok(())
     }
 
+    /// Upload data to a storage volume over a stream
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolUpload>
     pub fn upload(
         &self,
         stream: &Stream,
