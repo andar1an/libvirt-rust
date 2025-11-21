@@ -75,11 +75,17 @@ impl NWFilter {
         self.ptr
     }
 
+    /// Returns the network filter name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virNWFilterGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the network filter UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterGetUUID>
     pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
@@ -87,6 +93,9 @@ impl NWFilter {
         Ok(Uuid::from_bytes(uuid))
     }
 
+    /// Returns the network filter UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterGetUUIDString>
     pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
@@ -95,6 +104,9 @@ impl NWFilter {
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
+    /// Returns the network filter XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterGetXMLDesc>
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = check_null!(unsafe {
             sys::virNWFilterGetXMLDesc(self.as_ptr(), flags as libc::c_uint)
@@ -102,6 +114,9 @@ impl NWFilter {
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
+    /// Removes the network filter configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterUndefine>
     pub fn undefine(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNWFilterUndefine(self.as_ptr()) })?;
         Ok(())
