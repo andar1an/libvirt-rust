@@ -250,6 +250,9 @@ impl Connect {
         Connect { ptr }
     }
 
+    /// Get the local library version number
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virGetVersion>
     pub fn version() -> Result<u32, Error> {
         let mut ver: libc::c_ulong = 0;
         let _ = check_neg!(unsafe { sys::virGetVersion(&mut ver, ptr::null(), ptr::null_mut()) })?;
@@ -284,6 +287,8 @@ impl Connect {
     ///     Err(e) => panic!("Unable to connect: {e}"),
     /// };
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectOpen>
     pub fn open(uri: Option<&str>) -> Result<Connect, Error> {
         let uri_buf = some_string_to_cstring!(uri);
         let c = check_null!(unsafe { sys::virConnectOpen(some_cstring_to_c_chars!(uri_buf)) })?;
@@ -300,6 +305,8 @@ impl Connect {
     /// resources.
     ///
     /// [`open()`]: Connect::open
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectOpenReadOnly>
     pub fn open_read_only(uri: Option<&str>) -> Result<Connect, Error> {
         let uri_buf = some_string_to_cstring!(uri);
         let c =
@@ -307,6 +314,10 @@ impl Connect {
         Ok(unsafe { Connect::from_ptr(c) })
     }
 
+    /// This function should be called first to get a connection to
+    /// the Hypervisor with the ability to provide authentication
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectOpenAuth>
     pub fn open_auth(
         uri: Option<&str>,
         auth: &mut ConnectAuth,
@@ -341,32 +352,49 @@ impl Connect {
     /// but possibly expanded to a fully-qualified domain name via
     /// getaddrinfo).  If we are connected to a remote system, then
     /// this returns the hostname of the remote system.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetHostname>
     pub fn hostname(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virConnectGetHostname(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
+    /// Returns the host driver capabilities
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetCapabilities>
     pub fn capabilities(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virConnectGetCapabilities(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
+    /// Returns the remote connection version
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetLibVersion>
     pub fn lib_version(&self) -> Result<u32, Error> {
         let mut ver: libc::c_ulong = 0;
         let _ = check_neg!(unsafe { sys::virConnectGetLibVersion(self.as_ptr(), &mut ver) })?;
         Ok(ver as u32)
     }
 
+    /// Returns the connection driver type
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetType>
     pub fn driver_type(&self) -> Result<String, Error> {
         let t = check_null!(unsafe { sys::virConnectGetType(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(t, nofree) })
     }
 
+    /// Returns the connection URI string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetURI>
     pub fn uri(&self) -> Result<String, Error> {
         let t = check_null!(unsafe { sys::virConnectGetURI(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(t) })
     }
 
+    /// Returns the host system information
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetSysinfo>
     pub fn sys_info(&self, flags: u32) -> Result<String, Error> {
         let sys = check_null!(unsafe {
             sys::virConnectGetSysinfo(self.as_ptr(), flags as libc::c_uint)
@@ -374,6 +402,9 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(sys) })
     }
 
+    /// Retunrns the maximum virtual CPUs supported for virtual machines
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetMaxVcpus>
     pub fn max_vcpus(&self, domtype: Option<&str>) -> Result<u32, Error> {
         let type_buf = some_string_to_cstring!(domtype);
         let max = check_neg!(unsafe {
@@ -382,6 +413,9 @@ impl Connect {
         Ok(max as u32)
     }
 
+    /// Returns the list of known CPU model names
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetCPUModelNames>
     pub fn cpu_models_names(&self, arch: &str, flags: u32) -> Result<Vec<String>, Error> {
         let mut names: *mut *mut libc::c_char = ptr::null_mut();
         let arch_buf = CString::new(arch)?;
@@ -403,22 +437,31 @@ impl Connect {
         Ok(array)
     }
 
+    /// Determine if the connection is still alive
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectIsAlive>
     pub fn is_alive(&self) -> Result<bool, Error> {
         let t = check_neg!(unsafe { sys::virConnectIsAlive(self.as_ptr()) })?;
         Ok(t == 1)
     }
 
+    /// Determine if the connection data transport is encrypted
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectIsEncrypted>
     pub fn is_encrypted(&self) -> Result<bool, Error> {
         let t = check_neg!(unsafe { sys::virConnectIsEncrypted(self.as_ptr()) })?;
         Ok(t == 1)
     }
 
+    /// Determine if the connection data transport is secure
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectIsSecure>
     pub fn is_secure(&self) -> Result<bool, Error> {
         let t = check_neg!(unsafe { sys::virConnectIsSecure(self.as_ptr()) })?;
         Ok(t == 1)
     }
 
-    ///
+    /// Returns a list of IDs for running domain objects
     ///
     /// # Examples
     ///
@@ -429,6 +472,8 @@ impl Connect {
     /// let domains = conn.list_domains().unwrap();
     /// assert_eq!(domains.len(), 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectListDomains>
     #[allow(clippy::needless_range_loop)]
     pub fn list_domains(&self) -> Result<Vec<u32>, Error> {
         let mut ids: [libc::c_int; 512] = [0; 512];
@@ -442,7 +487,7 @@ impl Connect {
         Ok(array)
     }
 
-    ///
+    /// Returns a list of active interface object names
     ///
     /// # Examples
     ///
@@ -453,6 +498,8 @@ impl Connect {
     /// let ifaces = conn.list_interfaces().unwrap();
     /// assert_eq!(ifaces.len(), 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virConnectListInterfaces>
     #[allow(clippy::needless_range_loop)]
     pub fn list_interfaces(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -466,7 +513,7 @@ impl Connect {
         Ok(array)
     }
 
-    ///
+    /// Returns a list of active network object names
     ///
     /// # Examples
     ///
@@ -477,6 +524,8 @@ impl Connect {
     /// let networks = conn.list_networks().unwrap();
     /// assert_eq!(networks.len(), 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virConnectListNetworks>
     #[allow(clippy::needless_range_loop)]
     pub fn list_networks(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -490,6 +539,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of network filter names
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virConnectListNWFilters>
     #[allow(clippy::needless_range_loop)]
     pub fn list_nw_filters(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -503,6 +555,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of secret object UUID strings
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virConnectListSecrets>
     #[allow(clippy::needless_range_loop)]
     pub fn list_secrets(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -516,7 +571,7 @@ impl Connect {
         Ok(array)
     }
 
-    ///
+    /// Returns a list of active storage pool object names
     ///
     /// # Examples
     ///
@@ -527,6 +582,8 @@ impl Connect {
     /// let pools = conn.list_storage_pools().unwrap();
     /// assert_eq!(pools.len(), 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virConnectListStoragePools>
     #[allow(clippy::needless_range_loop)]
     pub fn list_storage_pools(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -540,6 +597,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of domain objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectListAllDomains>
     pub fn list_all_domains(
         &self,
         flags: sys::virConnectListAllDomainsFlags,
@@ -557,6 +617,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of network objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virConnectListAllNetworks>
     pub fn list_all_networks(
         &self,
         flags: sys::virConnectListAllNetworksFlags,
@@ -574,6 +637,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of interface objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virConnectListAllInterfaces>
     pub fn list_all_interfaces(
         &self,
         flags: sys::virConnectListAllInterfacesFlags,
@@ -591,6 +657,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of node devices
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virConnectListAllNodeDevices>
     pub fn list_all_node_devices(
         &self,
         flags: sys::virConnectListAllNodeDeviceFlags,
@@ -608,6 +677,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of secret objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virConnectListAllSecrets>
     pub fn list_all_secrets(
         &self,
         flags: sys::virConnectListAllSecretsFlags,
@@ -625,6 +697,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of storage pool objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virConnectListAllStoragePools>
     pub fn list_all_storage_pools(
         &self,
         flags: sys::virConnectListAllStoragePoolsFlags,
@@ -642,6 +717,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns a list of network filter objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virConnectListAllNWFilters>
     pub fn list_all_nw_filters(&self, flags: u32) -> Result<Vec<NWFilter>, Error> {
         let mut filters: *mut sys::virNWFilterPtr = ptr::null_mut();
         let size = check_neg!(unsafe {
@@ -656,7 +734,7 @@ impl Connect {
         Ok(array)
     }
 
-    ///
+    /// Returns a list of inactive domain object names
     ///
     /// # Examples
     ///
@@ -667,6 +745,8 @@ impl Connect {
     /// let domains = conn.list_defined_domains().unwrap();
     /// assert_eq!(domains.len(), 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectListDefinedDomains>
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_domains(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -680,7 +760,7 @@ impl Connect {
         Ok(array)
     }
 
-    ///
+    /// Returns a list of inactive interface object names
     ///
     /// # Examples
     ///
@@ -691,6 +771,8 @@ impl Connect {
     /// let ifaces = conn.list_defined_interfaces().unwrap();
     /// assert_eq!(ifaces.len(), 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virConnectListDefinedInterfaces>
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_interfaces(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -704,7 +786,7 @@ impl Connect {
         Ok(array)
     }
 
-    ///
+    /// Returns a list of inactive storage pool names
     ///
     /// # Examples
     ///
@@ -715,6 +797,8 @@ impl Connect {
     /// let pools = conn.list_defined_storage_pools().unwrap();
     /// assert_eq!(pools.len(), 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virConnectListDefinedStoragePools>
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_storage_pools(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -728,7 +812,7 @@ impl Connect {
         Ok(array)
     }
 
-    ///
+    /// Returns a list of inactive netwokr names
     ///
     /// # Examples
     ///
@@ -739,6 +823,8 @@ impl Connect {
     /// let networks = conn.list_defined_networks().unwrap();
     /// assert_eq!(networks.len(), 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virConnectListDefinedNetworks>
     #[allow(clippy::needless_range_loop)]
     pub fn list_defined_networks(&self) -> Result<Vec<String>, Error> {
         let mut names: [*mut libc::c_char; 1024] = [ptr::null_mut(); 1024];
@@ -752,6 +838,8 @@ impl Connect {
         Ok(array)
     }
 
+    /// Returns the number of running domain objects
+    ///
     /// # Examples
     ///
     /// ```
@@ -761,11 +849,15 @@ impl Connect {
     /// let num_domains = conn.num_of_domains().unwrap();
     /// assert_eq!(num_domains, 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectNumOfDomains>
     pub fn num_of_domains(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfDomains(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of active interfaces
+    ///
     /// # Examples
     ///
     /// ```
@@ -775,11 +867,15 @@ impl Connect {
     /// let num_ifaces = conn.num_of_interfaces().unwrap();
     /// assert_eq!(num_ifaces, 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virConnectNumOfInterfaces>
     pub fn num_of_interfaces(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfInterfaces(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of active networks
+    ///
     /// # Examples
     ///
     /// ```
@@ -789,11 +885,15 @@ impl Connect {
     /// let num_networks = conn.num_of_networks().unwrap();
     /// assert_eq!(num_networks, 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virConnectNumOfNetworks>
     pub fn num_of_networks(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfNetworks(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of active storage pools
+    ///
     /// # Examples
     ///
     /// ```
@@ -803,21 +903,31 @@ impl Connect {
     /// let num_pools = conn.num_of_storage_pools().unwrap();
     /// assert_eq!(num_pools, 1);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virConnectNumOfStoragePools>
     pub fn num_of_storage_pools(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfStoragePools(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of network filter objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virConnectNumOfNWFilters>
     pub fn num_of_nw_filters(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfNWFilters(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of secret objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virConnectNumOfSecrets>
     pub fn num_of_secrets(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfSecrets(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of inactive domain objects
+    ///
     /// # Examples
     ///
     /// ```
@@ -827,11 +937,15 @@ impl Connect {
     /// let num_domains = conn.num_of_defined_domains().unwrap();
     /// assert_eq!(num_domains, 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectNumOfDefinedDomains>
     pub fn num_of_defined_domains(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfDefinedDomains(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of inactive interfaces
+    ///
     /// # Examples
     ///
     /// ```
@@ -841,11 +955,15 @@ impl Connect {
     /// let num_ifaces = conn.num_of_defined_interfaces().unwrap();
     /// assert_eq!(num_ifaces, 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virConnectNumOfDefinedInterfaces>
     pub fn num_of_defined_interfaces(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfDefinedInterfaces(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of inactive networks
+    ///
     /// # Examples
     ///
     /// ```
@@ -855,11 +973,15 @@ impl Connect {
     /// let num_networks = conn.num_of_defined_networks().unwrap();
     /// assert_eq!(num_networks, 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virConnectNumOfDefinedNetworks>
     pub fn num_of_defined_networks(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfDefinedNetworks(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the number of inactive storage pools
+    ///
     /// # Examples
     ///
     /// ```
@@ -869,11 +991,15 @@ impl Connect {
     /// let num_pools = conn.num_of_defined_storage_pools().unwrap();
     /// assert_eq!(num_pools, 0);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virConnectNumOfDefinedStoragePools>
     pub fn num_of_defined_storage_pools(&self) -> Result<u32, Error> {
         let num = check_neg!(unsafe { sys::virConnectNumOfDefinedStoragePools(self.as_ptr()) })?;
         Ok(num as u32)
     }
 
+    /// Returns the hypervisor version number
+    ///
     /// # Examples
     ///
     /// ```
@@ -883,12 +1009,17 @@ impl Connect {
     /// let hyp_version = conn.hyp_version().unwrap();
     /// assert_eq!(hyp_version, 2);
     /// ```
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectGetVersion>
     pub fn hyp_version(&self) -> Result<u32, Error> {
         let mut hyver: libc::c_ulong = 0;
         let _ = check_neg!(unsafe { sys::virConnectGetVersion(self.as_ptr(), &mut hyver) })?;
         Ok(hyver as u32)
     }
 
+    /// Compare CPU definitions for compatibility
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectCompareCPU>
     pub fn compare_cpu(
         &self,
         xml: &str,
@@ -901,11 +1032,17 @@ impl Connect {
         Ok(res as sys::virCPUCompareResult)
     }
 
+    /// Returns the free memory on the host
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virNodeGetFreeMemory>
     pub fn free_memory(&self) -> Result<u64, Error> {
         let res = check_zero!(unsafe { sys::virNodeGetFreeMemory(self.as_ptr()) })?;
         Ok(res)
     }
 
+    /// Returns the host resource information
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virNodeGetInfo>
     pub fn node_info(&self) -> Result<NodeInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let _ = check_neg!(unsafe { sys::virNodeGetInfo(self.as_ptr(), pinfo.as_mut_ptr()) })?;
@@ -922,6 +1059,9 @@ impl Connect {
         })
     }
 
+    /// Controls the keep-alive settings on the libvirt connection
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectSetKeepAlive>
     pub fn set_keep_alive(&self, interval: i32, count: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virConnectSetKeepAlive(
@@ -933,6 +1073,10 @@ impl Connect {
         Ok(())
     }
 
+    /// Returns libvirt XML corresponding to a hypervisor
+    /// native configuration file
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectDomainXMLFromNative>
     pub fn domain_xml_from_native(
         &self,
         nformat: &str,
@@ -952,6 +1096,10 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
+    /// Returns the hypervisor native configuration for
+    /// a libvirt XML document
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectDomainXMLToNative>
     pub fn domain_xml_to_native(
         &self,
         nformat: &str,
@@ -971,6 +1119,9 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
+    /// Returns the domain capabilities description
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectGetDomainCapabilities>
     pub fn domain_capabilities(
         &self,
         emulatorbin: Option<&str>,
@@ -996,6 +1147,9 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
+    /// Returns the domain statistics
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virConnectGetAllDomainStats>
     pub fn all_domain_stats(
         &self,
         stats: u32,
@@ -1022,6 +1176,9 @@ impl Connect {
         Ok(array)
     }
 
+    /// Determine the baseline between multiple CPU definitions
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virConnectBaselineCPU>
     pub fn baseline_cpu(
         &self,
         xmlcpus: &[&str],
@@ -1045,6 +1202,9 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ret) })
     }
 
+    /// Find storage pools matching a given specification
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virConnectFindStoragePoolSources>
     pub fn find_storage_pool_sources(
         &self,
         kind: &str,
@@ -1068,6 +1228,9 @@ impl Connect {
     /// information on free memory on individual NUMA nodes, starting
     /// with `start_cell` and consecutive `max_cells`. Continuous NUMA
     /// node IDs are expected. Returned values are in bytes.
+    ///
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virNodeGetCellsFreeMemory>
     pub fn cells_free_memory(&self, start_cell: i32, max_cells: i32) -> Result<Vec<u64>, Error> {
         let mut free_mems: Vec<libc::c_ulonglong> = Vec::with_capacity(max_cells as usize);
         let size: i32 = check_neg!(unsafe {
@@ -1102,6 +1265,9 @@ impl Connect {
     /// let conn = Connect::open(Some("test:///default")).unwrap();
     /// let free_pages = conn.free_pages(&[4, 8, 2048, 1024 * 1024], 0, 2, 0);
     /// ```
+    ///
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-host.html#virNodeGetFreePages>
     pub fn free_pages(
         &self,
         pages: &[u32],
@@ -1129,6 +1295,9 @@ impl Connect {
         Ok(counts)
     }
 
+    /// Returns the interface object with the requested name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceLookupByName>
     pub fn lookup_interface_by_name(&self, id: &str) -> Result<Interface, Error> {
         let id_buf = CString::new(id)?;
         let ptr =
@@ -1136,6 +1305,9 @@ impl Connect {
         Ok(unsafe { Interface::from_ptr(ptr) })
     }
 
+    /// Writes the inactive interface object config
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceDefineXML>
     pub fn define_interface_xml(&self, xml: &str, flags: u32) -> Result<Interface, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr = check_null!(unsafe {
@@ -1144,6 +1316,9 @@ impl Connect {
         Ok(unsafe { Interface::from_ptr(ptr) })
     }
 
+    /// Returns the interface object wit the requested MAC address
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-interface.html#virInterfaceLookupByMACString>
     pub fn lookup_interface_by_mac_string(&self, id: &str) -> Result<Interface, Error> {
         let id_buf = CString::new(id)?;
         let ptr = check_null!(unsafe {
@@ -1152,12 +1327,18 @@ impl Connect {
         Ok(unsafe { Interface::from_ptr(ptr) })
     }
 
+    /// Returns the domain object with the requested ID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainLookupByID>
     pub fn lookup_domain_by_id(&self, id: u32) -> Result<Domain, Error> {
         let ptr =
             check_null!(unsafe { sys::virDomainLookupByID(self.as_ptr(), id as libc::c_int) })?;
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Returns the domain object with the requested name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainLookupByName>
     pub fn lookup_domain_by_name(&self, id: &str) -> Result<Domain, Error> {
         let id_buf = CString::new(id)?;
         let ptr =
@@ -1165,6 +1346,9 @@ impl Connect {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Returns the domain object with the requested UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainLookupByUUID>
     pub fn lookup_domain_by_uuid(&self, uuid: Uuid) -> Result<Domain, Error> {
         let ptr = check_null!(unsafe {
             sys::virDomainLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
@@ -1172,6 +1356,9 @@ impl Connect {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Returns the domain object with the requested UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainLookupByUUIDString>
     pub fn lookup_domain_by_uuid_string(&self, uuid: &str) -> Result<Domain, Error> {
         let uuid_buf = CString::new(uuid)?;
         let ptr = check_null!(unsafe {
@@ -1191,6 +1378,9 @@ impl Connect {
     ///
     /// [`xml_desc()`]: Domain::xml_desc
     /// [`define_domain_xml()`]: Connect::define_domain_xml
+    ///
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainCreateXML>
     pub fn create_domain_xml(
         &self,
         xml: &str,
@@ -1216,6 +1406,9 @@ impl Connect {
     /// same id as the domain being defined.
     ///
     /// [`undefine()`]: Domain::undefine
+    ///
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainDefineXML>
     pub fn define_domain_xml(&self, xml: &str) -> Result<Domain, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr = check_null!(unsafe { sys::virDomainDefineXML(self.as_ptr(), xml_buf.as_ptr()) })?;
@@ -1235,6 +1428,9 @@ impl Connect {
     /// same id as the domain being defined.
     ///
     /// [`undefine()`]: Domain::undefine
+    ///
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainDefineXMLFlags>
     pub fn define_domain_xml_flags(
         &self,
         xml: &str,
@@ -1247,12 +1443,18 @@ impl Connect {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Restore a domain from a saved state file
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainRestore>
     pub fn restore_domain(&self, path: &str) -> Result<(), Error> {
         let path_buf = CString::new(path)?;
         let _ = check_neg!(unsafe { sys::virDomainRestore(self.as_ptr(), path_buf.as_ptr()) })?;
         Ok(())
     }
 
+    /// Restore a domain from a saved state file
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainRestoreFlags>
     pub fn restore_domain_flags(
         &self,
         path: &str,
@@ -1272,6 +1474,9 @@ impl Connect {
         Ok(())
     }
 
+    /// Returns the XML embedded in a saved state file
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSaveImageGetXMLDesc>
     pub fn save_image_xml_desc(&self, file: &str, flags: u32) -> Result<String, Error> {
         let file_buf = CString::new(file)?;
         let ptr = check_null!(unsafe {
@@ -1284,6 +1489,9 @@ impl Connect {
         Ok(unsafe { c_chars_to_string!(ptr) })
     }
 
+    /// Updates the XML embedded in a saved state file
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSaveImageDefineXML>
     pub fn save_image_define_xml(&self, file: &str, dxml: &str, flags: u32) -> Result<(), Error> {
         let file_buf = CString::new(file)?;
         let dxml_buf = CString::new(dxml)?;
@@ -1298,6 +1506,9 @@ impl Connect {
         Ok(())
     }
 
+    /// Returns the network object with the requested name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkLookupByName>
     pub fn lookup_network_by_name(&self, id: &str) -> Result<Network, Error> {
         let id_buf = CString::new(id)?;
         let ptr =
@@ -1305,6 +1516,9 @@ impl Connect {
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
+    /// Returns the network object with the requested UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkLookupByUUID>
     pub fn lookup_network_by_uuid(&self, uuid: Uuid) -> Result<Network, Error> {
         let ptr = check_null!(unsafe {
             sys::virNetworkLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
@@ -1312,6 +1526,9 @@ impl Connect {
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
+    /// Returns the network object with the requested UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkLookupByUUIDString>
     pub fn lookup_network_by_uuid_string(&self, uuid: &str) -> Result<Network, Error> {
         let uuid_buf = CString::new(uuid)?;
         let ptr = check_null!(unsafe {
@@ -1320,6 +1537,9 @@ impl Connect {
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
+    /// Writes an inactive network configuration file
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkDefineXML>
     pub fn define_network_xml(&self, xml: &str) -> Result<Network, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr =
@@ -1327,6 +1547,9 @@ impl Connect {
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
+    /// Creates an active network
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkCreateXML>
     pub fn create_network_xml(&self, xml: &str) -> Result<Network, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr =
@@ -1334,6 +1557,9 @@ impl Connect {
         Ok(unsafe { Network::from_ptr(ptr) })
     }
 
+    /// Returns the node device object with the requested name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceLookupByName>
     pub fn lookup_node_device_by_name(&self, id: &str) -> Result<NodeDevice, Error> {
         let id_buf = CString::new(id)?;
         let ptr =
@@ -1341,6 +1567,10 @@ impl Connect {
         Ok(unsafe { NodeDevice::from_ptr(ptr) })
     }
 
+    /// Returns the node device corresponding to a SCSI host
+    /// with the requested WWN.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceLookupSCSIHostByWWN>
     pub fn lookup_node_device_scsi_host_by_wwn(
         &self,
         wwnn: &str,
@@ -1360,6 +1590,9 @@ impl Connect {
         Ok(unsafe { NodeDevice::from_ptr(ptr) })
     }
 
+    /// Creates a node device object
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeDeviceCreateXML>
     pub fn create_node_device_xml(&self, xml: &str, flags: u32) -> Result<NodeDevice, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr = check_null!(unsafe {
@@ -1368,6 +1601,9 @@ impl Connect {
         Ok(unsafe { NodeDevice::from_ptr(ptr) })
     }
 
+    /// Returns the number of node device objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nodedev.html#virNodeNumOfDevices>
     pub fn num_of_node_devices(&self, cap: Option<&str>, flags: u32) -> Result<u32, Error> {
         let cap_buf = some_string_to_cstring!(cap);
         let num = check_neg!(unsafe {
@@ -1380,6 +1616,9 @@ impl Connect {
         Ok(num as u32)
     }
 
+    /// Returns the network filter with the requested name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterLookupByName>
     pub fn lookup_nwfilter_by_name(&self, id: &str) -> Result<NWFilter, Error> {
         let id_buf = CString::new(id)?;
         let ptr =
@@ -1387,6 +1626,9 @@ impl Connect {
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
+    /// Returns the network filter with the requested UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterLookupByUUID>
     pub fn lookup_nwfilter_by_uuid(&self, uuid: Uuid) -> Result<NWFilter, Error> {
         let ptr = check_null!(unsafe {
             sys::virNWFilterLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
@@ -1394,6 +1636,9 @@ impl Connect {
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
+    /// Returns the network filter with the requested UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterLookupByUUIDString>
     pub fn lookup_nwfilter_by_uuid_string(&self, uuid: &str) -> Result<NWFilter, Error> {
         let uuid_buf = CString::new(uuid)?;
         let ptr = check_null!(unsafe {
@@ -1402,6 +1647,9 @@ impl Connect {
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
+    /// Writes an inactive network filter config
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-nwfilter.html#virNWFilterDefineXML>
     pub fn define_nwfilter_xml(&self, xml: &str) -> Result<NWFilter, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr =
@@ -1409,6 +1657,9 @@ impl Connect {
         Ok(unsafe { NWFilter::from_ptr(ptr) })
     }
 
+    /// Writes a secret object config
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretDefineXML>
     pub fn define_secret_xml(&self, xml: &str, flags: u32) -> Result<Secret, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr = check_null!(unsafe {
@@ -1417,6 +1668,9 @@ impl Connect {
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
+    /// Returns the secret object with the requested UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretLookupByUUID>
     pub fn lookup_secret_by_uuid(&self, uuid: Uuid) -> Result<Secret, Error> {
         let ptr = check_null!(unsafe {
             sys::virSecretLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
@@ -1424,6 +1678,9 @@ impl Connect {
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
+    /// Returns the secret object with the requested UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretLookupByUUIDString>
     pub fn lookup_secret_by_uuid_string(&self, uuid: &str) -> Result<Secret, Error> {
         let uuid_buf = CString::new(uuid)?;
         let ptr = check_null!(unsafe {
@@ -1432,6 +1689,9 @@ impl Connect {
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
+    /// Returns the secret object with the requested usage identifier
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-secret.html#virSecretLookupByUsage>
     pub fn lookup_secret_by_usage(&self, usagetype: i32, usageid: &str) -> Result<Secret, Error> {
         let usageid_buf = CString::new(usageid)?;
         let ptr = check_null!(unsafe {
@@ -1444,6 +1704,9 @@ impl Connect {
         Ok(unsafe { Secret::from_ptr(ptr) })
     }
 
+    /// Writes an inactive storage pool config
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolDefineXML>
     pub fn define_storage_pool_xml(&self, xml: &str, flags: u32) -> Result<StoragePool, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr = check_null!(unsafe {
@@ -1452,6 +1715,9 @@ impl Connect {
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
+    /// Creates an active storage pool
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolCreateXML>
     pub fn create_storage_pool_xml(
         &self,
         xml: &str,
@@ -1464,6 +1730,9 @@ impl Connect {
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
+    /// Returns the storage pool with the requested name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolLookupByName>
     pub fn lookup_storage_pool_by_name(&self, id: &str) -> Result<StoragePool, Error> {
         let id_buf = CString::new(id)?;
         let ptr = check_null!(unsafe {
@@ -1472,6 +1741,9 @@ impl Connect {
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
+    /// Returns the storage pool with the requested target path
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolLookupByTargetPath>
     pub fn lookup_storage_pool_by_target_path(&self, path: &str) -> Result<StoragePool, Error> {
         let path_buf = CString::new(path)?;
         let ptr = check_null!(unsafe {
@@ -1480,6 +1752,9 @@ impl Connect {
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
+    /// Returns the storage pool with the requested UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolLookupByUUID>
     pub fn lookup_storage_pool_by_uuid(&self, uuid: Uuid) -> Result<StoragePool, Error> {
         let ptr = check_null!(unsafe {
             sys::virStoragePoolLookupByUUID(self.as_ptr(), uuid.as_bytes().as_ptr())
@@ -1487,6 +1762,9 @@ impl Connect {
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
+    /// Returns the storage pool with the requested UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStoragePoolLookupByUUIDString>
     pub fn lookup_storage_pool_by_uuid_string(&self, uuid: &str) -> Result<StoragePool, Error> {
         let uuid_buf = CString::new(uuid)?;
         let ptr = check_null!(unsafe {
@@ -1495,6 +1773,9 @@ impl Connect {
         Ok(unsafe { StoragePool::from_ptr(ptr) })
     }
 
+    /// Returns the storage volume with the requested key
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolLookupByKey>
     pub fn lookup_storage_vol_by_key(&self, key: &str) -> Result<StorageVol, Error> {
         let key_buf = CString::new(key)?;
         let ptr =
@@ -1502,6 +1783,9 @@ impl Connect {
         Ok(unsafe { StorageVol::from_ptr(ptr) })
     }
 
+    /// Returns the storage volume with the requested path
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-storage.html#virStorageVolLookupByPath>
     pub fn lookup_storage_vol_by_path(&self, path: &str) -> Result<StorageVol, Error> {
         let path_buf = CString::new(path)?;
         let ptr = check_null!(unsafe {
