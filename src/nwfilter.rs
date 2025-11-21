@@ -19,6 +19,7 @@
 use uuid::Uuid;
 
 use crate::error::Error;
+use crate::util::{check_neg, check_null};
 
 /// Provides APIs for the management for network filters.
 ///
@@ -33,9 +34,7 @@ unsafe impl Sync for NWFilter {}
 
 impl Drop for NWFilter {
     fn drop(&mut self) {
-        let ret = unsafe { sys::virNWFilterFree(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virNWFilterFree(self.as_ptr()) }) {
             panic!("Unable to drop reference on network filter: {e}")
         }
     }
@@ -47,12 +46,9 @@ impl Clone for NWFilter {
     /// Increments the internal reference counter on the given
     /// filter.
     fn clone(&self) -> Self {
-        let ret = unsafe { sys::virNWFilterRef(self.as_ptr()) };
-        if ret == -1 {
-            let e = Error::last_error();
+        if let Err(e) = check_neg!(unsafe { sys::virNWFilterRef(self.as_ptr()) }) {
             panic!("Unable to add reference on network filter: {e}")
         }
-
         unsafe { NWFilter::from_ptr(self.as_ptr()) }
     }
 }
@@ -80,46 +76,34 @@ impl NWFilter {
     }
 
     pub fn name(&self) -> Result<String, Error> {
-        let n = unsafe { sys::virNWFilterGetName(self.as_ptr()) };
-        if n.is_null() {
-            return Err(Error::last_error());
-        }
+        let n = check_null!(unsafe { sys::virNWFilterGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
     pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
-        let ret = unsafe { sys::virNWFilterGetUUID(self.as_ptr(), uuid.as_mut_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virNWFilterGetUUID(self.as_ptr(), uuid.as_mut_ptr()) })?;
         Ok(Uuid::from_bytes(uuid))
     }
 
     pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
-        let ret = unsafe { sys::virNWFilterGetUUIDString(self.as_ptr(), uuid.as_mut_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ =
+            check_neg!(unsafe { sys::virNWFilterGetUUIDString(self.as_ptr(), uuid.as_mut_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
     pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
-        let xml = unsafe { sys::virNWFilterGetXMLDesc(self.as_ptr(), flags as libc::c_uint) };
-        if xml.is_null() {
-            return Err(Error::last_error());
-        }
+        let xml = check_null!(unsafe {
+            sys::virNWFilterGetXMLDesc(self.as_ptr(), flags as libc::c_uint)
+        })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
     pub fn undefine(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virNWFilterUndefine(self.as_ptr()) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virNWFilterUndefine(self.as_ptr()) })?;
         Ok(())
     }
 }
