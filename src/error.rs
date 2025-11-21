@@ -653,6 +653,9 @@ impl Error {
     ///
     /// This function is typically called by the safe wrappers in this library. It should only be
     /// used if you call [virt_sys] functions directly.
+    ///
+    ///
+    /// See <https://libvirt.org/html/libvirt-virterror.html#virGetLastError>
     pub fn last_error() -> Error {
         let ptr: sys::virErrorPtr = unsafe { sys::virGetLastError() };
         if ptr.is_null() {
