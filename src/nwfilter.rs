@@ -79,7 +79,7 @@ impl NWFilter {
         self.ptr
     }
 
-    pub fn get_name(&self) -> Result<String, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virNWFilterGetName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -87,7 +87,7 @@ impl NWFilter {
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    pub fn get_uuid(&self) -> Result<Uuid, Error> {
+    pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
         let ret = unsafe { sys::virNWFilterGetUUID(self.as_ptr(), uuid.as_mut_ptr()) };
@@ -97,7 +97,7 @@ impl NWFilter {
         Ok(Uuid::from_bytes(uuid))
     }
 
-    pub fn get_uuid_string(&self) -> Result<String, Error> {
+    pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
         let ret = unsafe { sys::virNWFilterGetUUIDString(self.as_ptr(), uuid.as_mut_ptr()) };
@@ -107,7 +107,7 @@ impl NWFilter {
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
-    pub fn get_xml_desc(&self, flags: u32) -> Result<String, Error> {
+    pub fn xml_desc(&self, flags: u32) -> Result<String, Error> {
         let xml = unsafe { sys::virNWFilterGetXMLDesc(self.as_ptr(), flags as libc::c_uint) };
         if xml.is_null() {
             return Err(Error::last_error());
