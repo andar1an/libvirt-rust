@@ -87,11 +87,17 @@ impl Network {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
+    /// Returns the network name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virNetworkGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
+    /// Returns the network UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkGetUUID>
     pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
@@ -99,6 +105,9 @@ impl Network {
         Ok(Uuid::from_bytes(uuid))
     }
 
+    /// Returns the network UUID string
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkGetUUIDString>
     pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
@@ -107,47 +116,74 @@ impl Network {
         Ok(unsafe { c_chars_to_string!(uuid.as_ptr(), nofree) })
     }
 
+    /// Returns the network bridge name
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkGetBridgeName>
     pub fn bridge_name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virNetworkGetBridgeName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
+    /// Returns the network XML configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkGetXMLDesc>
     pub fn xml_desc(&self, flags: sys::virNetworkXMLFlags) -> Result<String, Error> {
         let xml = check_null!(unsafe { sys::virNetworkGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
     }
 
+    /// Starts an inactive network
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkCreate>
     pub fn create(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNetworkCreate(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Stops an active network
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkDestroy>
     pub fn destroy(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNetworkDestroy(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Removes the network configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkUndefine>
     pub fn undefine(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virNetworkUndefine(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Determines if the network is active
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkIsActive>
     pub fn is_active(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virNetworkIsActive(self.as_ptr()) })?;
         Ok(ret == 1)
     }
 
+    /// Determines if the network has a persistent configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkIsPersistent>
     pub fn is_persistent(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virNetworkIsPersistent(self.as_ptr()) })?;
         Ok(ret == 1)
     }
 
+    /// Returns the network autostart behaviour
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkGetAutostart>
     pub fn autostart(&self) -> Result<bool, Error> {
         let mut auto = 0;
         let _ = check_neg!(unsafe { sys::virNetworkGetAutostart(self.as_ptr(), &mut auto) })?;
         Ok(auto == 1)
     }
 
+    /// Updates the network autostart behaviour
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkSetAutostart>
     pub fn set_autostart(&self, autostart: bool) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virNetworkSetAutostart(self.as_ptr(), autostart as libc::c_int)
@@ -155,6 +191,9 @@ impl Network {
         Ok(())
     }
 
+    /// Updates the network configuration
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-network.html#virNetworkUpdate>
     pub fn update(
         &self,
         cmd: sys::virNetworkUpdateCommand,
