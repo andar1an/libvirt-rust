@@ -19,6 +19,7 @@
 use std::os::unix::io::RawFd;
 
 use crate::error::Error;
+use crate::util::check_neg;
 
 // wrapper for callbacks
 unsafe extern "C" fn event_callback<
@@ -56,10 +57,7 @@ impl EventHandleWatch {
     }
 
     pub fn event_remove_handle(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virEventRemoveHandle(self.0) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virEventRemoveHandle(self.0) })?;
         Ok(())
     }
 
@@ -125,10 +123,7 @@ impl EventTimeoutWatch {
     }
 
     pub fn event_remove_timeout(&self) -> Result<(), Error> {
-        let ret = unsafe { sys::virEventRemoveTimeout(self.0) };
-        if ret == -1 {
-            return Err(Error::last_error());
-        }
+        let _ = check_neg!(unsafe { sys::virEventRemoveTimeout(self.0) })?;
         Ok(())
     }
 
@@ -163,17 +158,11 @@ pub fn event_add_timeout<F: 'static + FnMut(libc::c_int, *mut libc::c_void)>(
 }
 
 pub fn event_register_default_impl() -> Result<(), Error> {
-    let ret = unsafe { sys::virEventRegisterDefaultImpl() };
-    if ret == -1 {
-        return Err(Error::last_error());
-    }
+    let _ = check_neg!(unsafe { sys::virEventRegisterDefaultImpl() })?;
     Ok(())
 }
 
 pub fn event_run_default_impl() -> Result<(), Error> {
-    let ret = unsafe { sys::virEventRunDefaultImpl() };
-    if ret == -1 {
-        return Err(Error::last_error());
-    }
+    let _ = check_neg!(unsafe { sys::virEventRunDefaultImpl() })?;
     Ok(())
 }
