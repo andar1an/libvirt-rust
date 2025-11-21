@@ -2013,17 +2013,17 @@ impl Domain {
     /// NOTE: Only a subset of the fields in JobStats are populated by this method. If you want to
     /// populate more fields then you should use [`Self::job_stats`].
     pub fn job_info(&self) -> Result<JobStats, Error> {
-        unsafe {
-            let mut job_info = mem::MaybeUninit::uninit();
-            let ret = sys::virDomainGetJobInfo(self.as_ptr(), job_info.as_mut_ptr());
+        let mut job_info = mem::MaybeUninit::uninit();
+        let ret = unsafe { sys::virDomainGetJobInfo(self.as_ptr(), job_info.as_mut_ptr()) };
 
-            if ret == -1 {
-                return Err(Error::last_error());
-            }
+        if ret == -1 {
+            return Err(Error::last_error());
+        }
 
-            let ptr: sys::virDomainJobInfoPtr = &mut job_info.assume_init();
+        let ptr: sys::virDomainJobInfoPtr = unsafe { &mut job_info.assume_init() };
 
-            Ok(JobStats {
+        Ok(unsafe {
+            JobStats {
                 r#type: (*ptr).type_,
                 time_elapsed: Some((*ptr).timeElapsed as u64),
                 time_remaining: Some((*ptr).timeRemaining as u64),
@@ -2037,8 +2037,8 @@ impl Domain {
                 disk_processed: Some((*ptr).fileProcessed as u64),
                 disk_remaining: Some((*ptr).fileRemaining as u64),
                 ..Default::default()
-            })
-        }
+            }
+        })
     }
 
     pub fn attach_device(&self, xml: &str) -> Result<(), Error> {
