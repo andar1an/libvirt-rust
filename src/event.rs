@@ -56,17 +56,26 @@ impl EventHandleWatch {
         self.0
     }
 
+    /// Remove an event file handle
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-event.html#virEventRemoveHandle>
     pub fn event_remove_handle(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virEventRemoveHandle(self.0) })?;
         Ok(())
     }
 
+    /// Update an event file handle
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-event.html#virEventUpdateHandle>
     pub fn event_update_handle(&self, events: sys::virEventHandleType) {
         let events = events as libc::c_int;
         unsafe { sys::virEventUpdateHandle(self.0, events) };
     }
 }
 
+/// Add an event file handle
+///
+/// See <https://libvirt.org/html/libvirt-libvirt-event.html#virEventAddHandle>
 pub fn event_add_handle<
     F: 'static + FnMut(libc::c_int, libc::c_int, sys::virEventHandleType, *mut libc::c_void),
 >(
@@ -122,16 +131,25 @@ impl EventTimeoutWatch {
         self.0
     }
 
+    /// Remove an event timer
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-event.html#virEventRemoveTimeout>
     pub fn event_remove_timeout(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virEventRemoveTimeout(self.0) })?;
         Ok(())
     }
 
+    /// Update an event timer
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-event.html#virEventUpdateTimeout>
     pub fn event_update_timeout(&self, timeout: libc::c_int) {
         unsafe { sys::virEventUpdateTimeout(self.0, timeout) };
     }
 }
 
+/// Add an event timer
+///
+/// See <https://libvirt.org/html/libvirt-libvirt-event.html#virEventAddTimeout>
 pub fn event_add_timeout<F: 'static + FnMut(libc::c_int, *mut libc::c_void)>(
     timeout: libc::c_int,
     cb: F,
