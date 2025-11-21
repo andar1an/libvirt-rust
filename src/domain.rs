@@ -1080,6 +1080,8 @@ impl Domain {
     ///
     /// Each state can be accompanied with a reason (if known) which
     /// led to the state.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetState>
     pub fn state(&self) -> Result<(DomainStateEnum, DomainStateReasonEnum), Error> {
         let mut state: libc::c_int = -1;
         let mut reason: libc::c_int = -1;
@@ -1122,18 +1124,24 @@ impl Domain {
     }
 
     /// Get the public name of the domain.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetName>
     pub fn name(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virDomainGetName(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
     /// Get the type of domain operating system.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetOSType>
     pub fn os_type(&self) -> Result<String, Error> {
         let n = check_null!(unsafe { sys::virDomainGetOSType(self.as_ptr()) })?;
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
     /// Get the hostname for that domain.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetHostname>
     pub fn hostname(&self, flags: u32) -> Result<String, Error> {
         let n = check_null!(unsafe {
             sys::virDomainGetHostname(self.as_ptr(), flags as libc::c_uint)
@@ -1141,6 +1149,9 @@ impl Domain {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
+    /// Returns the domain UUID
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetUUID>
     pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
@@ -1151,6 +1162,8 @@ impl Domain {
     /// Get the UUID for a domain as string.
     ///
     /// For more information about UUID see RFC4122.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetUUIDString>
     pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
@@ -1160,6 +1173,8 @@ impl Domain {
     }
 
     /// Get the hypervisor ID number for the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetID>
     pub fn id(&self) -> Option<u32> {
         let ret = unsafe { sys::virDomainGetID(self.as_ptr()) };
         if ret as i32 == -1 {
@@ -1172,6 +1187,8 @@ impl Domain {
     /// be reused later to relaunch the domain with [`create_domain_xml()`].
     ///
     /// [`create_domain_xml()`]: Connect::create_domain_xml
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetXMLDesc>
     pub fn xml_desc(&self, flags: sys::virDomainXMLFlags) -> Result<String, Error> {
         let xml = check_null!(unsafe { sys::virDomainGetXMLDesc(self.as_ptr(), flags) })?;
         Ok(unsafe { c_chars_to_string!(xml) })
@@ -1183,6 +1200,8 @@ impl Domain {
     /// paused domain.For more control, see [`create_with_flags()`].
     ///
     /// [`create_with_flags()`]: Domain::create_with_flags
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainCreate>
     pub fn create(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainCreate(self.as_ptr()) })?;
         Ok(())
@@ -1190,6 +1209,8 @@ impl Domain {
 
     /// Launch a defined domain. If the call succeeds the domain moves
     /// from the defined to the running domains pools.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainCreateWithFlags>
     pub fn create_with_flags(&self, flags: sys::virDomainCreateFlags) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainCreateWithFlags(self.as_ptr(), flags as libc::c_uint)
@@ -1200,6 +1221,8 @@ impl Domain {
     /// Extract information about a domain. Note that if the
     /// connection used to get the domain is limited only a partial
     /// set of the information can be extracted.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetInfo>
     pub fn info(&self) -> Result<DomainInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let _ = check_neg!(unsafe { sys::virDomainGetInfo(self.as_ptr(), pinfo.as_mut_ptr()) })?;
@@ -1210,6 +1233,8 @@ impl Domain {
     /// down already and all resources used by it are given back to
     /// the hypervisor. This does not free the associated virDomainPtr
     /// object. This function may require privileged access.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainDestroy>
     pub fn destroy(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainDestroy(self.as_ptr()) })?;
         Ok(())
@@ -1222,6 +1247,8 @@ impl Domain {
     ///
     /// Note that there is a risk of data loss caused by reset without
     /// any guest OS shutdown.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainReset>
     pub fn reset(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainReset(self.as_ptr(), 0) })?;
         Ok(())
@@ -1231,6 +1258,8 @@ impl Domain {
     /// down already and all resources used by it are given back to
     /// the hypervisor. This does not free the associated virDomainPtr
     /// object. This function may require privileged access.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainDestroyFlags>
     pub fn destroy_flags(&self, flags: sys::virDomainDestroyFlagsValues) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainDestroyFlags(self.as_ptr(), flags) })?;
         Ok(())
@@ -1250,6 +1279,8 @@ impl Domain {
     /// blocking until the guest is no longer running.
     ///
     /// [`destroy()`]: Domain::destroy
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainShutdown>
     pub fn shutdown(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainShutdown(self.as_ptr()) })?;
         Ok(())
@@ -1278,6 +1309,8 @@ impl Domain {
     ///
     /// To use guest agent [`sys::VIR_DOMAIN_SHUTDOWN_GUEST_AGENT`] the domain XML must
     /// have \<channel\> configured.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainShutdownFlags>
     pub fn shutdown_flags(&self, flags: sys::virDomainShutdownFlagValues) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainShutdownFlags(self.as_ptr(), flags as libc::c_uint)
@@ -1288,6 +1321,8 @@ impl Domain {
     /// Reboot a domain.
     ///
     /// The domain object is still usable thereafter.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainReboot>
     pub fn reboot(&self, flags: sys::virDomainRebootFlagValues) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainReboot(self.as_ptr(), flags) })?;
         Ok(())
@@ -1304,6 +1339,8 @@ impl Domain {
     /// [`PMSuspended`].
     ///
     /// [`PMSuspended`]: DomainState::PMSuspended
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSuspend>
     pub fn suspend(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainSuspend(self.as_ptr()) })?;
         Ok(())
@@ -1318,11 +1355,16 @@ impl Domain {
     ///
     /// [`suspend()`]: Domain::suspend
     /// [`PMSuspended`]: DomainState::PMSuspended
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainResume>
     pub fn resume(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainResume(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Wakeup the domain from a power-management sleep state
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainPMWakeup>
     pub fn pm_wakeup(&self, flags: u32) -> Result<(), Error> {
         let _ =
             check_neg!(unsafe { sys::virDomainPMWakeup(self.as_ptr(), flags as libc::c_uint) })?;
@@ -1330,6 +1372,8 @@ impl Domain {
     }
 
     /// Determine if the domain is currently running.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainIsActive>
     pub fn is_active(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virDomainIsActive(self.as_ptr()) })?;
         Ok(ret == 1)
@@ -1337,6 +1381,8 @@ impl Domain {
 
     /// Determine if the domain has a persistent configuration which means it will still exist
     /// after shutting down.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainIsPersistent>
     pub fn is_persistent(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virDomainIsPersistent(self.as_ptr()) })?;
         Ok(ret == 1)
@@ -1347,6 +1393,8 @@ impl Domain {
     /// If the domain is running, it's converted to transient domain,
     /// without stopping it. If the domain is inactive, the domain
     /// configuration is removed.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainUndefine>
     pub fn undefine(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainUndefine(self.as_ptr()) })?;
         Ok(())
@@ -1357,22 +1405,33 @@ impl Domain {
     /// If the domain is running, it's converted to transient domain,
     /// without stopping it. If the domain is inactive, the domain
     /// configuration is removed.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainUndefineFlags>
     pub fn undefine_flags(&self, flags: sys::virDomainUndefineFlagsValues) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virDomainUndefineFlags(self.as_ptr(), flags) })?;
         Ok(())
     }
 
+    /// Determine if the active domain configuration is updated
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainIsUpdated>
     pub fn is_updated(&self) -> Result<bool, Error> {
         let ret = check_neg!(unsafe { sys::virDomainIsUpdated(self.as_ptr()) })?;
         Ok(ret == 1)
     }
 
+    /// Returns the domain autostart behaviour
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetAutostart>
     pub fn autostart(&self) -> Result<bool, Error> {
         let mut autostart: libc::c_int = 0;
         let _ = check_neg!(unsafe { sys::virDomainGetAutostart(self.as_ptr(), &mut autostart) })?;
         Ok(autostart == 1)
     }
 
+    /// Updates the domain autostart behaviour
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetAutostart>
     pub fn set_autostart(&self, autostart: bool) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainSetAutostart(self.as_ptr(), autostart as libc::c_int)
@@ -1380,6 +1439,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Updates the maximum memory limit
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetMaxMemory>
     pub fn set_max_memory(&self, memory: u64) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainSetMaxMemory(self.as_ptr(), memory as libc::c_ulong)
@@ -1387,22 +1449,34 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns the maximum memory limit
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetMaxMemory>
     pub fn max_memory(&self) -> Result<u64, Error> {
         let ret = check_zero!(unsafe { sys::virDomainGetMaxMemory(self.as_ptr()) })?;
         Ok(c_ulong_to_u64(ret))
     }
 
+    /// Returns the maximum vCPU count
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetMaxVcpus>
     pub fn max_vcpus(&self) -> Result<u64, Error> {
         let ret = check_neg!(unsafe { sys::virDomainGetMaxVcpus(self.as_ptr()) })?;
         Ok(ret as u64)
     }
 
+    /// Updates the domain memory balloon target
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetMemory>
     pub fn set_memory(&self, memory: u64) -> Result<(), Error> {
         let _ =
             check_neg!(unsafe { sys::virDomainSetMemory(self.as_ptr(), memory as libc::c_ulong) });
         Ok(())
     }
 
+    /// Updates the domain memory balloon target
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetMemoryFlags>
     pub fn set_memory_flags(
         &self,
         memory: u64,
@@ -1418,6 +1492,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Updates the memory stats polling interval
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetMemoryStatsPeriod>
     pub fn set_memory_stats_period(
         &self,
         period: i32,
@@ -1433,12 +1510,18 @@ impl Domain {
         Ok(())
     }
 
+    /// Updates the domain vCPU count
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetVcpus>
     pub fn set_vcpus(&self, vcpus: u32) -> Result<(), Error> {
         let _ =
             check_neg!(unsafe { sys::virDomainSetVcpus(self.as_ptr(), vcpus as libc::c_uint) })?;
         Ok(())
     }
 
+    /// Updates the domain vCPU count
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetVcpusFlags>
     pub fn set_vcpus_flags(&self, vcpus: u32, flags: sys::virDomainVcpuFlags) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainSetVcpusFlags(self.as_ptr(), vcpus as libc::c_uint, flags as libc::c_uint)
@@ -1446,6 +1529,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns the domani vCPU count
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetVcpusFlags>
     pub fn vcpus_flags(&self, flags: sys::virDomainVcpuFlags) -> Result<u32, Error> {
         let ret = check_neg!(unsafe {
             sys::virDomainGetVcpusFlags(self.as_ptr(), flags as libc::c_uint)
@@ -1453,6 +1539,9 @@ impl Domain {
         Ok(ret as u32)
     }
 
+    /// Updates the maximum domain migration data rate
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateSetMaxSpeed>
     pub fn migrate_set_max_speed(&self, bandwidth: u64, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainMigrateSetMaxSpeed(
@@ -1464,6 +1553,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns the maximum domain migration data rate
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateGetMaxSpeed>
     pub fn migrate_max_speed(&self, flags: u32) -> Result<u64, Error> {
         let mut bandwidth: libc::c_ulong = 0;
         let _ = check_neg!(unsafe {
@@ -1472,6 +1564,9 @@ impl Domain {
         Ok(c_ulong_to_u64(bandwidth))
     }
 
+    /// Updates the domain migration compression cache size
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateSetCompressionCache>
     pub fn migrate_set_compression_cache(&self, size: u64, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainMigrateSetCompressionCache(
@@ -1483,6 +1578,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returnjs the domain migration compression cache size
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateGetCompressionCache>
     pub fn migrate_compression_cache(&self, flags: u32) -> Result<u64, Error> {
         let mut size: libc::c_ulonglong = 0;
         let _ = check_neg!(unsafe {
@@ -1495,6 +1593,9 @@ impl Domain {
         Ok(size)
     }
 
+    /// Updates the domain migration permitted downtime
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateSetMaxDowntime>
     pub fn migrate_set_max_downtime(&self, downtime: u64, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainMigrateSetMaxDowntime(
@@ -1506,6 +1607,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Updates the domain virtual clock
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetTime>
     pub fn set_time(&self, seconds: i64, nseconds: i32, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainSetTime(
@@ -1518,6 +1622,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns the domain virtual clock
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetTime>
     pub fn time(&self, flags: u32) -> Result<(i64, i32), Error> {
         let mut seconds: libc::c_longlong = 0;
         let mut nseconds: libc::c_uint = 0;
@@ -1532,6 +1639,9 @@ impl Domain {
         Ok((seconds, nseconds as i32))
     }
 
+    /// Returns information for a domain block device
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetBlockInfo>
     pub fn block_info(&self, disk: &str, flags: u32) -> Result<BlockInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let disk_buf = CString::new(disk)?;
@@ -1546,6 +1656,9 @@ impl Domain {
         Ok(unsafe { BlockInfo::from_ptr(&mut pinfo.assume_init()) })
     }
 
+    /// Returns I/O statistics for a domain block device
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainBlockStats>
     pub fn block_stats(&self, disk: &str) -> Result<BlockStats, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let disk_buf = CString::new(disk)?;
@@ -1560,6 +1673,9 @@ impl Domain {
         Ok(unsafe { BlockStats::from_ptr(&mut pinfo.assume_init()) })
     }
 
+    /// Pin a domain vCPU to host pCPUs
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainPinVcpu>
     pub fn pin_vcpu(&self, vcpu: u32, cpumap: &[u8]) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainPinVcpu(
@@ -1572,6 +1688,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Pin a domain vCPU to host pCPUs
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainPinVcpuFlags>
     pub fn pin_vcpu_flags(&self, vcpu: u32, cpumap: &[u8], flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainPinVcpuFlags(
@@ -1585,6 +1704,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Pin the domain emulator threads to host pCPUs
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainPinEmulator>
     pub fn pin_emulator(&self, cpumap: &[u8], flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainPinEmulator(
@@ -1597,6 +1719,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Rename a domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainRename>
     pub fn rename(&self, new_name: &str, flags: u32) -> Result<(), Error> {
         let new_name_buf = CString::new(new_name)?;
         let _ = check_neg!(unsafe {
@@ -1605,6 +1730,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Set the guest OS user password
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetUserPassword>
     pub fn set_user_password(&self, user: &str, password: &str, flags: u32) -> Result<(), Error> {
         let user_buf = CString::new(user)?;
         let password_buf = CString::new(password)?;
@@ -1619,6 +1747,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Set the threshold for block device events
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetBlockThreshold>
     pub fn set_block_threshold(&self, dev: &str, threshold: u64, flags: u32) -> Result<(), Error> {
         let dev_buf = CString::new(dev)?;
         let _ = check_neg!(unsafe {
@@ -1632,6 +1763,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Connect a file descriptor to the domain graphical console
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainOpenGraphics>
     pub fn open_graphics(&self, idx: u32, fd: i32, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainOpenGraphics(
@@ -1644,6 +1778,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Return a file descriptor connected to the domain graphical console
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainOpenGraphicsFD>
     pub fn open_graphics_fd(&self, idx: u32, flags: u32) -> Result<u32, Error> {
         let ret = check_neg!(unsafe {
             sys::virDomainOpenGraphicsFD(self.as_ptr(), idx as libc::c_uint, flags as libc::c_uint)
@@ -1651,6 +1788,9 @@ impl Domain {
         Ok(ret as u32)
     }
 
+    /// Connect a stream to a domain channel
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainOpenChannel>
     pub fn open_channel(
         &self,
         name: Option<&str>,
@@ -1669,6 +1809,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Connect a stream to a domain serial port or console
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainOpenConsole>
     pub fn open_console(
         &self,
         name: Option<&str>,
@@ -1687,6 +1830,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Return a list of guest OS interfaces
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInterfaceAddresses>
     pub fn interface_addresses(
         &self,
         source: sys::virDomainInterfaceAddressesSource,
@@ -1706,6 +1852,9 @@ impl Domain {
         Ok(array)
     }
 
+    /// Return statistics for a domain network interface
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInterfaceStats>
     pub fn interface_stats(&self, path: &str) -> Result<InterfaceStats, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let path_buf = CString::new(path)?;
@@ -1720,6 +1869,9 @@ impl Domain {
         Ok(unsafe { InterfaceStats::from_ptr(&mut pinfo.assume_init()) })
     }
 
+    /// Returns statistics for guest OS memory usage
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMemoryStats>
     pub fn memory_stats(&self, flags: u32) -> Result<Vec<MemoryStat>, Error> {
         let mut pinfo: Vec<sys::virDomainMemoryStatStruct> =
             Vec::with_capacity(sys::VIR_DOMAIN_MEMORY_STAT_NR as usize);
@@ -1759,6 +1911,8 @@ impl Domain {
     /// Retrieve stats for CPU 0 (cgroups v1 only):
     ///
     /// [`domain::cpu_stats(0, 1, 0)`]
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetCPUStats>
     pub fn cpu_stats(
         &self,
         start_cpu: i32,
@@ -1805,6 +1959,8 @@ impl Domain {
 
     /// Get progress statistics about a background job running on this domain.
     /// This method will return an error if the domain isn't active
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetJobStats>
     pub fn job_stats(&self, flags: sys::virDomainGetJobStatsFlags) -> Result<JobStats, Error> {
         let mut r#type: libc::c_int = 0;
 
@@ -1832,6 +1988,8 @@ impl Domain {
     /// Get progress information about a background job running on this domain.
     /// NOTE: Only a subset of the fields in JobStats are populated by this method. If you want to
     /// populate more fields then you should use [`Self::job_stats`].
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetJobInfo>
     pub fn job_info(&self) -> Result<JobStats, Error> {
         let mut job_info = mem::MaybeUninit::uninit();
         let _ =
@@ -1858,12 +2016,18 @@ impl Domain {
         })
     }
 
+    /// Attach a device to the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainAttachDevice>
     pub fn attach_device(&self, xml: &str) -> Result<(), Error> {
         let xml_buf = CString::new(xml)?;
         let _ = check_neg!(unsafe { sys::virDomainAttachDevice(self.as_ptr(), xml_buf.as_ptr()) });
         Ok(())
     }
 
+    /// Attach a device to the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainAttachDeviceFlags>
     pub fn attach_device_flags(&self, xml: &str, flags: u32) -> Result<(), Error> {
         let xml_buf = CString::new(xml)?;
         let _ = check_neg!(unsafe {
@@ -1872,12 +2036,18 @@ impl Domain {
         Ok(())
     }
 
+    /// Detach a device from the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainDetachDevice>
     pub fn detach_device(&self, xml: &str) -> Result<(), Error> {
         let xml_buf = CString::new(xml)?;
         let _ = check_neg!(unsafe { sys::virDomainDetachDevice(self.as_ptr(), xml_buf.as_ptr()) })?;
         Ok(())
     }
 
+    /// Detach a device from the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainDetachDeviceFlags>
     pub fn detach_device_flags(&self, xml: &str, flags: u32) -> Result<(), Error> {
         let xml_buf = CString::new(xml)?;
         let _ = check_neg!(unsafe {
@@ -1886,6 +2056,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Update a domain on the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainUpdateDeviceFlags>
     pub fn update_device_flags(&self, xml: &str, flags: u32) -> Result<(), Error> {
         let xml_buf = CString::new(xml)?;
         let _ = check_neg!(unsafe {
@@ -1894,12 +2067,18 @@ impl Domain {
         Ok(())
     }
 
+    /// Save the domain state to disk
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainManagedSave>
     pub fn managed_save(&self, flags: u32) -> Result<(), Error> {
         let _ =
             check_neg!(unsafe { sys::virDomainManagedSave(self.as_ptr(), flags as libc::c_uint) })?;
         Ok(())
     }
 
+    /// Determine if the domain has saved state on disk
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainHasManagedSaveImage>
     pub fn has_managed_save(&self, flags: u32) -> Result<bool, Error> {
         let ret = check_neg!(unsafe {
             sys::virDomainHasManagedSaveImage(self.as_ptr(), flags as libc::c_uint)
@@ -1907,6 +2086,9 @@ impl Domain {
         Ok(ret == 1)
     }
 
+    /// Remove the domain saved state
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainManagedSaveRemove>
     pub fn managed_save_remove(&self, flags: u32) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virDomainManagedSaveRemove(self.as_ptr(), flags as libc::c_uint)
@@ -1914,6 +2096,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Initiate a core dump of the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainCoreDump>
     pub fn core_dump(&self, to: &str, flags: u32) -> Result<(), Error> {
         let to_buf = CString::new(to)?;
         let _ = check_neg!(unsafe {
@@ -1922,6 +2107,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Initiate a core dump of the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainCoreDumpWithFormat>
     pub fn core_dump_with_format(&self, to: &str, format: u32, flags: u32) -> Result<(), Error> {
         let to_buf = CString::new(to)?;
         let _ = check_neg!(unsafe {
@@ -1935,6 +2123,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Update the domain metadata XML
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetMetadata>
     pub fn set_metadata(
         &self,
         kind: i32,
@@ -1959,6 +2150,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns the domain metadata XML
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetMetadata>
     pub fn metadata(&self, kind: i32, uri: Option<&str>, flags: u32) -> Result<String, Error> {
         let uri_buf = some_string_to_cstring!(uri);
         let n = check_null!(unsafe {
@@ -1972,6 +2166,9 @@ impl Domain {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
+    /// Resize a block device on a running domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainBlockResize>
     pub fn block_resize(&self, disk: &str, size: u64, flags: u32) -> Result<(), Error> {
         let disk_buf = CString::new(disk)?;
         let _ = check_neg!(unsafe {
@@ -1985,6 +2182,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns the domain memory parameters
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetMemoryParameters>
     pub fn memory_parameters(&self, flags: u32) -> Result<MemoryParameters, Error> {
         let mut nparams: libc::c_int = 0;
         let _ = check_neg!(unsafe {
@@ -2008,6 +2208,9 @@ impl Domain {
         Ok(MemoryParameters::from_vec(params))
     }
 
+    /// Updates the dmoain memory parameters
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetMemoryParameters>
     pub fn set_memory_parameters(&self, params: MemoryParameters, flags: u32) -> Result<(), Error> {
         let mut cparams = params.to_vec();
         let _ = check_neg!(unsafe {
@@ -2021,6 +2224,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Migrate the domain to another host
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrate>
     pub fn migrate(
         &self,
         dconn: &Connect,
@@ -2044,6 +2250,9 @@ impl Domain {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Migrate the domain to another host
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrate2>
     pub fn migrate2(
         &self,
         dconn: &Connect,
@@ -2070,6 +2279,9 @@ impl Domain {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Migrate the domain to another host
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrate3>
     pub fn migrate3(
         &self,
         dconn: &Connect,
@@ -2089,6 +2301,9 @@ impl Domain {
         Ok(unsafe { Domain::from_ptr(ptr) })
     }
 
+    /// Migrate the domain to another host
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateToURI>
     pub fn migrate_to_uri(
         &self,
         duri: &str,
@@ -2110,6 +2325,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Migrate the domain to another host
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateToURI2>
     pub fn migrate_to_uri2(
         &self,
         dconn_uri: Option<&str>,
@@ -2137,6 +2355,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Migrate the domain to another host
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainMigrateToURI3>
     pub fn migrate_to_uri3(
         &self,
         dconn_uri: Option<&str>,
@@ -2157,6 +2378,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns the domain NUMA parameters
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetNumaParameters>
     pub fn numa_parameters(&self, flags: u32) -> Result<NUMAParameters, Error> {
         let mut nparams: libc::c_int = 0;
         let _ = check_neg!(unsafe {
@@ -2183,6 +2407,9 @@ impl Domain {
         Ok(nparams)
     }
 
+    /// Updates the domain NUMA parameters
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetNumaParameters>
     pub fn set_numa_parameters(&self, params: NUMAParameters, flags: u32) -> Result<(), Error> {
         let mut cparams = params.to_vec();
         let _ = check_neg!(unsafe {
@@ -2197,6 +2424,9 @@ impl Domain {
         Ok(())
     }
 
+    /// Returns a list of domain snapshot objects
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainListAllSnapshots>
     pub fn list_all_snapshots(&self, flags: u32) -> Result<Vec<DomainSnapshot>, Error> {
         let mut snaps: *mut sys::virDomainSnapshotPtr = ptr::null_mut();
         let size = check_neg!(unsafe {
@@ -2213,6 +2443,8 @@ impl Domain {
     }
 
     /// Get the cpu scheduler type for the domain
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetSchedulerType>
     pub fn scheduler_type(&self) -> Result<(String, i32), Error> {
         let mut nparams: libc::c_int = -1;
         let sched_type =
@@ -2221,6 +2453,8 @@ impl Domain {
     }
 
     /// Get the scheduler parameters for the domain.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetSchedulerParameters>
     pub fn scheduler_parameters(&self) -> Result<SchedulerInfo, Error> {
         let (sched_type, mut nparams) = self.scheduler_type()?;
         let mut params: Vec<sys::virTypedParameter> = Vec::with_capacity(nparams as usize);
@@ -2242,6 +2476,8 @@ impl Domain {
     /// [`VIR_DOMAIN_AFFECT_CURRENT`]: sys::VIR_DOMAIN_AFFECT_CURRENT
     /// [`VIR_DOMAIN_AFFECT_LIVE`]: sys::VIR_DOMAIN_AFFECT_LIVE
     /// [`VIR_DOMAIN_AFFECT_CONFIG`]: sys::VIR_DOMAIN_AFFECT_CONFIG
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainGetSchedulerParametersFlags>
     pub fn scheduler_parameters_flags(
         &self,
         flags: sys::virDomainModificationImpact,
@@ -2261,6 +2497,8 @@ impl Domain {
     }
 
     /// Set the scheduler parameters for the domain.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetSchedulerParameters>
     pub fn set_scheduler_parameters(&self, sched_info: &SchedulerInfo) -> Result<(), Error> {
         let mut params = sched_info.to_vec();
         let _ = check_neg!(unsafe {
@@ -2284,6 +2522,8 @@ impl Domain {
     /// [`VIR_DOMAIN_AFFECT_CURRENT`]: sys::VIR_DOMAIN_AFFECT_CURRENT
     /// [`VIR_DOMAIN_AFFECT_LIVE`]: sys::VIR_DOMAIN_AFFECT_LIVE
     /// [`VIR_DOMAIN_AFFECT_CONFIG`]: sys::VIR_DOMAIN_AFFECT_CONFIG
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSetSchedulerParametersFlags>
     pub fn set_scheduler_parameters_flags(
         &self,
         sched_info: &SchedulerInfo,
@@ -2309,6 +2549,8 @@ impl Domain {
     /// * `keycodes` - Specifies the array of keycodes.
     /// * `nkeycodes` - Specifies the number of keycodes.
     /// * `flags` - Extra flags; not used yet, so callers should always pass 0..
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainSendKey>
     pub fn send_key(
         &self,
         codeset: sys::virKeycodeSet,
@@ -2338,6 +2580,8 @@ impl Domain {
     /// * `stream` - stream to use as output
     /// * `screen` - monitor ID to take screenshot from
     /// * `flags` - extra flags; not used yet, so callers should always pass 0
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainScreenshot>
     pub fn screenshot(&self, stream: &Stream, screen: u32, flags: u32) -> Result<String, Error> {
         let n = check_null!(unsafe {
             sys::virDomainScreenshot(
@@ -2356,6 +2600,8 @@ impl Domain {
     /// * `flags` - bitwise-or of supported [`virDomainQemuMonitorCommandFlags`]
     ///
     /// [`virDomainQemuMonitorCommandFlags`]: sys::virDomainQemuMonitorCommandFlags
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-qemu.html#virDomainQemuMonitorCommand>
     #[cfg(feature = "qemu")]
     pub fn qemu_monitor_command(&self, cmd: &str, flags: u32) -> Result<String, Error> {
         let mut result: *mut libc::c_char = std::ptr::null_mut();
@@ -2378,6 +2624,8 @@ impl Domain {
     /// * `timeout` - the timeout in seconds, or one of the [`virDomainQemuAgentCommandTimeoutValues`] flags
     ///
     /// [`virDomainQemuAgentCommandTimeoutValues`]: sys::virDomainQemuAgentCommandTimeoutValues
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-qemu.html#virDomainQemuAgentCommand>
     #[cfg(feature = "qemu")]
     pub fn qemu_agent_command(&self, cmd: &str, timeout: i32, flags: u32) -> Result<String, Error> {
         let cmd_buf = CString::new(cmd)?;
@@ -2393,6 +2641,8 @@ impl Domain {
     }
 
     /// Get a handle to a named snapshot.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotLookupByName>
     pub fn lookup_snapshot_by_name(
         dom: &Domain,
         name: &str,
@@ -2409,6 +2659,9 @@ impl Domain {
         Ok(unsafe { DomainSnapshot::from_ptr(ptr) })
     }
 
+    /// Create a new domain snapshot
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotCreateXML>
     pub fn create_snapshot_xml(&self, xml: &str, flags: u32) -> Result<DomainSnapshot, Error> {
         let xml_buf = CString::new(xml)?;
         let ptr = check_null!(unsafe {
@@ -2418,6 +2671,8 @@ impl Domain {
     }
 
     /// Get a handle to the current snapshot
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotCurrent>
     pub fn current_snapshot(&self, flags: u32) -> Result<DomainSnapshot, Error> {
         let ptr = check_null!(unsafe {
             sys::virDomainSnapshotCurrent(self.as_ptr(), flags as libc::c_uint)
@@ -2426,6 +2681,8 @@ impl Domain {
     }
 
     /// Return the number of snapshots for this domain.
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-domain-snapshot.html#virDomainSnapshotNum>
     pub fn num_snapshots(&self, flags: u32) -> Result<u32, Error> {
         let ret =
             check_neg!(unsafe { sys::virDomainSnapshotNum(self.as_ptr(), flags as libc::c_uint) })?;
