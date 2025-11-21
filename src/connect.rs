@@ -1341,7 +1341,7 @@ impl Connect {
         Ok(unsafe { NodeDevice::from_ptr(ptr) })
     }
 
-    pub fn lookup_node_device_scsi_host_by_www(
+    pub fn lookup_node_device_scsi_host_by_wwn(
         &self,
         wwnn: &str,
         wwpn: &str,
