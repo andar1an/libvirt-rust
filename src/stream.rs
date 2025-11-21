@@ -129,7 +129,7 @@ impl Stream {
         Ok(())
     }
 
-    pub fn send(&self, data: &[u8]) -> Result<usize, Error> {
+    pub fn send(&self, data: &[u8]) -> Result<isize, Error> {
         let ret = unsafe {
             sys::virStreamSend(
                 self.as_ptr(),
@@ -137,10 +137,10 @@ impl Stream {
                 data.len(),
             )
         };
-        usize::try_from(ret).map_err(|_| Error::last_error())
+        isize::try_from(ret).map_err(|_| Error::last_error())
     }
 
-    pub fn recv(&self, buf: &mut [u8]) -> Result<usize, Error> {
+    pub fn recv(&self, buf: &mut [u8]) -> Result<isize, Error> {
         let ret = unsafe {
             sys::virStreamRecv(
                 self.as_ptr(),
@@ -148,7 +148,7 @@ impl Stream {
                 buf.len(),
             )
         };
-        usize::try_from(ret).map_err(|_| Error::last_error())
+        isize::try_from(ret).map_err(|_| Error::last_error())
     }
 
     pub fn event_add_callback<F: 'static + FnMut(&Stream, sys::virStreamEventType)>(

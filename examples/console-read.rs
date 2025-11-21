@@ -44,7 +44,7 @@ fn read_callback(stream: &Stream, event_type: virStreamEventType) {
         let mut buf = vec![0; 1024];
         match stream.recv(buf.as_mut_slice()) {
             Ok(t) => {
-                if let Ok(received_data) = std::str::from_utf8(&buf[..t]) {
+                if let Ok(received_data) = std::str::from_utf8(&buf[..t as usize]) {
                     print!("{received_data}");
                 } else {
                     eprint!("Invalid UTF-8 sequence received.");
