@@ -58,7 +58,7 @@ fn main() {
             ..Default::default()
         };
         if let Ok(new_dom) = dom.migrate3(&dconn, migrate_parameters, flags) {
-            if let Ok(job_stats) = new_dom.get_job_stats(sys::VIR_DOMAIN_JOB_STATS_COMPLETED) {
+            if let Ok(job_stats) = new_dom.job_stats(sys::VIR_DOMAIN_JOB_STATS_COMPLETED) {
                 println!(
                     "Migration completed in {}ms",
                     job_stats

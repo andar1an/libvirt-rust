@@ -41,7 +41,7 @@ fn tdom(exec_test: fn(dom: Domain)) {
 #[test]
 fn test_name() {
     fn t(dom: Domain) {
-        assert_eq!("test", dom.get_name().unwrap_or_default());
+        assert_eq!("test", dom.name().unwrap_or_default());
     }
     tdom(t);
 }
@@ -51,7 +51,7 @@ fn test_uuid_string() {
     fn t(dom: Domain) {
         assert_eq!(
             "6695eb01-f6a4-8304-79aa-97f2502e193f",
-            dom.get_uuid_string().unwrap_or_default()
+            dom.uuid_string().unwrap_or_default()
         );
     }
     tdom(t);
@@ -63,7 +63,7 @@ fn test_uuid() {
     let c = common::conn();
     match c.lookup_domain_by_uuid(uuid) {
         Ok(dom) => {
-            assert_eq!(uuid, dom.get_uuid().unwrap_or_default());
+            assert_eq!(uuid, dom.uuid().unwrap_or_default());
         }
         Err(e) => panic!("{e}"),
     };
@@ -73,7 +73,7 @@ fn test_uuid() {
 #[test]
 fn test_id() {
     fn t(dom: Domain) {
-        assert_eq!(1, dom.get_id().unwrap_or(0));
+        assert_eq!(1, dom.id().unwrap_or(0));
     }
     tdom(t);
 }
@@ -82,7 +82,7 @@ fn test_id() {
 fn test_get_xml_desc() {
     fn t(dom: Domain) {
         assert!(
-            "" != dom.get_xml_desc(0).unwrap_or_default(),
+            "" != dom.xml_desc(0).unwrap_or_default(),
             "Should not be empty"
         );
     }
@@ -92,7 +92,7 @@ fn test_get_xml_desc() {
 #[test]
 fn test_get_info() {
     fn t(dom: Domain) {
-        match dom.get_info() {
+        match dom.info() {
             Ok(info) => assert!(info.state.is(DomainState::Running)),
             Err(_) => panic!("should have a node info"),
         }
@@ -103,7 +103,7 @@ fn test_get_info() {
 #[test]
 fn test_get_vcpus_flags() {
     fn t(dom: Domain) {
-        assert_eq!(2, dom.get_vcpus_flags(0).unwrap_or(0));
+        assert_eq!(2, dom.vcpus_flags(0).unwrap_or(0));
     }
     tdom(t);
 }
@@ -111,7 +111,7 @@ fn test_get_vcpus_flags() {
 #[test]
 fn test_schedinfo() {
     fn t(dom: Domain) {
-        let info = dom.get_scheduler_parameters().unwrap();
+        let info = dom.scheduler_parameters().unwrap();
         assert_eq!(info.scheduler_type, "fair");
         assert_eq!(info.weight, Some(50));
         assert_eq!(info.shares, None);
@@ -129,7 +129,7 @@ fn test_schedinfo() {
          * XXX test:///default driver doesn't currently persist the
          * changes made with 'set', so we can't test roundtrip
          *
-         *  let newerinfo = dom.get_scheduler_parameters().unwrap();
+         *  let newerinfo = dom.scheduler_parameters().unwrap();
          *
          *  assert_eq!(newerinfo.weight, Some(37));
          */
@@ -140,7 +140,7 @@ fn test_schedinfo() {
 #[test]
 fn test_memory_params() {
     fn t(dom: Domain) {
-        let info = dom.get_memory_parameters(0).unwrap();
+        let info = dom.memory_parameters(0).unwrap();
         assert_eq!(info.hard_limit, Some(MemoryParameters::VALUE_UNLIMITED));
         assert_eq!(info.soft_limit, Some(MemoryParameters::VALUE_UNLIMITED));
         assert_eq!(
@@ -155,7 +155,7 @@ fn test_memory_params() {
         };
         dom.set_memory_parameters(newinfo, 0).unwrap();
 
-        let info = dom.get_memory_parameters(0).unwrap();
+        let info = dom.memory_parameters(0).unwrap();
         assert_eq!(info.hard_limit, Some(MemoryParameters::VALUE_UNLIMITED));
         assert_eq!(info.soft_limit, Some(87539319));
         assert_eq!(
@@ -170,7 +170,7 @@ fn test_memory_params() {
 #[test]
 fn test_numa_params() {
     fn t(dom: Domain) {
-        let info = dom.get_numa_parameters(0).unwrap();
+        let info = dom.numa_parameters(0).unwrap();
         assert_eq!(info.mode, Some(sys::VIR_DOMAIN_NUMATUNE_MEM_STRICT as i32));
         assert_eq!(info.node_set, Some("".to_string()));
 
@@ -180,7 +180,7 @@ fn test_numa_params() {
         };
         dom.set_numa_parameters(newinfo, 0).unwrap();
 
-        let newerinfo = dom.get_numa_parameters(0).unwrap();
+        let newerinfo = dom.numa_parameters(0).unwrap();
         assert_eq!(
             newerinfo.mode,
             Some(sys::VIR_DOMAIN_NUMATUNE_MEM_PREFERRED as i32)
@@ -195,7 +195,7 @@ fn test_numa_params() {
 fn test_lookup_domain_by_id() {
     let c = common::conn();
     let d = common::build_test_domain(&c, "by_id", true);
-    let id = d.get_id().unwrap_or(0);
+    let id = d.id().unwrap_or(0);
     match c.lookup_domain_by_id(id) {
         Ok(_) => {}
         Err(e) => panic!("{e}"),
@@ -224,9 +224,9 @@ fn test_create_with_flags() {
             DomainState::Running.into(),
             DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
-    assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.get_name());
+    assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.name());
     common::clean_dom(d);
     common::close(c);
 }
@@ -241,7 +241,7 @@ fn test_shutdown() {
             DomainState::Running.into(),
             DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
     assert_eq!(Ok(0), d.shutdown());
     assert_eq!(
@@ -249,7 +249,7 @@ fn test_shutdown() {
             DomainState::Shutoff.into(),
             DomainStateReason::Shutoff(DomainShutoffReason::Shutdown.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
     common::clean_dom(d);
     common::close(c);
@@ -265,7 +265,7 @@ fn test_pause_resume() {
             DomainState::Running.into(),
             DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
     assert_eq!(Ok(0), d.suspend());
     assert_eq!(
@@ -273,7 +273,7 @@ fn test_pause_resume() {
             DomainState::Paused.into(),
             DomainStateReason::Paused(DomainPausedReason::User.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
     assert_eq!(Ok(0), d.resume());
     assert_eq!(
@@ -281,7 +281,7 @@ fn test_pause_resume() {
             DomainState::Running.into(),
             DomainStateReason::Running(DomainRunningReason::Unpaused.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
     common::clean_dom(d);
     common::close(c);
@@ -297,7 +297,7 @@ fn test_screenshot() {
             DomainState::Running.into(),
             DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
 
     let s = virt::stream::Stream::new(&c, 0).unwrap();
@@ -315,7 +315,7 @@ fn test_metadata() {
 
     assert_eq!(
         ErrorNumber::NoDomainMetadata,
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
             .unwrap_err()
             .code()
             .unwrap()
@@ -333,7 +333,7 @@ fn test_metadata() {
     );
     assert_eq!(
         Ok("fish".to_string()),
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
     );
     assert_eq!(
         Ok(0),
@@ -348,7 +348,7 @@ fn test_metadata() {
 
     assert_eq!(
         ErrorNumber::NoDomainMetadata,
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_DESCRIPTION as i32, None, 0)
             .unwrap_err()
             .code()
             .unwrap()
@@ -356,7 +356,7 @@ fn test_metadata() {
 
     assert_eq!(
         ErrorNumber::NoDomainMetadata,
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
             .unwrap_err()
             .code()
             .unwrap()
@@ -374,7 +374,7 @@ fn test_metadata() {
     );
     assert_eq!(
         Ok("food".to_string()),
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
     );
     assert_eq!(
         Ok(0),
@@ -383,7 +383,7 @@ fn test_metadata() {
 
     assert_eq!(
         ErrorNumber::NoDomainMetadata,
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_TITLE as i32, None, 0)
             .unwrap_err()
             .code()
             .unwrap()
@@ -395,7 +395,7 @@ fn test_metadata() {
 
     assert_eq!(
         ErrorNumber::NoDomainMetadata,
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
             .unwrap_err()
             .code()
             .unwrap()
@@ -413,7 +413,7 @@ fn test_metadata() {
     );
     assert_eq!(
         Ok(xmldoc.to_string()),
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
     );
     assert_eq!(
         Ok(0),
@@ -428,7 +428,7 @@ fn test_metadata() {
 
     assert_eq!(
         ErrorNumber::NoDomainMetadata,
-        d.get_metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
+        d.metadata(sys::VIR_DOMAIN_METADATA_ELEMENT as i32, Some(xmlns), 0)
             .unwrap_err()
             .code()
             .unwrap()
@@ -442,6 +442,6 @@ fn test_metadata() {
 fn test_get_cpu_stats() {
     let c = common::conn();
     let d = c.lookup_domain_by_name("test").unwrap();
-    let stats = d.get_cpu_stats(-1, 1, 0).unwrap();
+    let stats = d.cpu_stats(-1, 1, 0).unwrap();
     assert!(!stats.is_empty(), "Test driver should return a stat.");
 }

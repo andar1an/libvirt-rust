@@ -36,9 +36,9 @@ fn test_create_domain_with_flags() {
             DomainState::Running.into(),
             DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
-    assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.get_name());
+    assert_eq!(Ok(String::from("libvirt-rs-test-create")), d.name());
     common::clean_dom(d);
     common::close(c);
 }
@@ -167,7 +167,7 @@ fn test_reset() {
             DomainState::Running.into(),
             DomainStateReason::Running(DomainRunningReason::Booted.into()).into()
         )),
-        d.get_state()
+        d.state()
     );
     assert_eq!(Ok(0), d.reset());
     // TODO assert something showing reset has the intended side effect
@@ -181,10 +181,7 @@ fn test_domain_memory_stats() {
     let c = common::qemu_conn();
     let d = common::build_qemu_domain(&c, "memory_stats", false);
     assert_eq!(Ok(0), d.create_with_flags(0));
-    assert_eq!(
-        Ok(String::from("libvirt-rs-test-memory_stats")),
-        d.get_name()
-    );
+    assert_eq!(Ok(String::from("libvirt-rs-test-memory_stats")), d.name());
     for stat in d.memory_stats(0).unwrap() {
         match stat.tag {
             sys::VIR_DOMAIN_MEMORY_STAT_ACTUAL_BALLOON => assert_eq!(1024, stat.val),

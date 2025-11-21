@@ -29,11 +29,11 @@ use virt::sys;
 fn suspend_and_resume(conn: &Connect, name: &str, sec: u64) -> Result<(), Error> {
     if let Ok(dom) = conn.lookup_domain_by_name(name) {
         if dom.suspend().is_ok() {
-            println!("Domain '{:?}' suspended, info: {:?}", name, dom.get_info());
+            println!("Domain '{:?}' suspended, info: {:?}", name, dom.info());
             thread::sleep(time::Duration::from_millis(sec * 1000));
 
             if dom.resume().is_ok() {
-                println!("Domain '{:?}' resumed, info: {:?}", name, dom.get_info());
+                println!("Domain '{:?}' resumed, info: {:?}", name, dom.info());
                 return Ok(());
             }
         }
@@ -47,10 +47,7 @@ fn fetch_domains(conn: &Connect) -> Result<(), Error> {
         println!("Running domains:");
         println!("----------------");
         for dom in doms {
-            println!(
-                "{}",
-                dom.get_name().unwrap_or_else(|_| String::from("no-name"))
-            );
+            println!("{}", dom.name().unwrap_or_else(|_| String::from("no-name")));
         }
         return Ok(());
     }

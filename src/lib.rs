@@ -67,7 +67,7 @@
 //!
 //! if let Ok(mut conn) = Connect::open(Some("test://default")) {
 //!   if let Ok(dom) = conn.lookup_domain_by_name("myguest") {
-//!     if let Ok(memp) = dom.get_memory_parameters(0) {
+//!     if let Ok(memp) = dom.memory_parameters(0) {
 //!       if memp.hard_limit.is_some() {
 //!         println!("hard limit: {}", memp.hard_limit.unwrap())
 //!       }

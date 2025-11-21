@@ -1364,7 +1364,7 @@ impl Connect {
     }
 
     /// Launch a new guest domain, based on an XML description similar
-    /// to the one returned by [`get_xml_desc()`].
+    /// to the one returned by [`xml_desc()`].
     ///
     /// This function may require privileged access to the hypervisor.
     ///
@@ -1372,7 +1372,7 @@ impl Connect {
     /// when it is destroyed, or if the host is restarted (see
     /// [`define_domain_xml()`] to define persistent domains).
     ///
-    /// [`get_xml_desc()`]: Domain::get_xml_desc
+    /// [`xml_desc()`]: Domain::xml_desc
     /// [`define_domain_xml()`]: Connect::define_domain_xml
     pub fn create_domain_xml(
         &self,

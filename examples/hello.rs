@@ -56,13 +56,13 @@ fn show_domains(conn: &Connect) -> Result<(), Error> {
              * calls if domains are started or stopped between calls */
             if let Ok(doms) = conn.list_all_domains(flags) {
                 for dom in doms {
-                    let id = dom.get_id().unwrap_or(0);
-                    let name = dom.get_name().unwrap_or_else(|_| String::from("no-name"));
+                    let id = dom.id().unwrap_or(0);
+                    let name = dom.name().unwrap_or_else(|_| String::from("no-name"));
                     let active = dom.is_active().unwrap_or(false);
                     println!("ID: {id}, Name: {name}, Active: {active}");
-                    if let Ok(dinfo) = dom.get_info() {
+                    if let Ok(dinfo) = dom.info() {
                         println!("Domain info:");
-                        if let Ok(state) = dom.get_state() {
+                        if let Ok(state) = dom.state() {
                             println!("    State: {} ({})", state.0, state.1);
                         } else {
                             println!("    State: {}", dinfo.state);
@@ -72,7 +72,7 @@ fn show_domains(conn: &Connect) -> Result<(), Error> {
                         println!("    CPUs: {}", dinfo.nr_virt_cpu);
                         println!("    CPU Time: {}", dinfo.cpu_time);
                     }
-                    if let Ok(memtune) = dom.get_memory_parameters(0) {
+                    if let Ok(memtune) = dom.memory_parameters(0) {
                         println!("Memory tune:");
                         println!("    Hard Limit: {}", memtune.hard_limit.unwrap_or(0));
                         println!("    Soft Limit: {}", memtune.soft_limit.unwrap_or(0));
@@ -82,17 +82,17 @@ fn show_domains(conn: &Connect) -> Result<(), Error> {
                             memtune.swap_hard_limit.unwrap_or(0)
                         );
                     }
-                    if let Ok(numa) = dom.get_numa_parameters(0) {
+                    if let Ok(numa) = dom.numa_parameters(0) {
                         println!("NUMA:");
                         println!("    Node Set: {}", numa.node_set.unwrap_or_default());
                         println!("    Mode: {}", numa.mode.unwrap_or(0));
                     }
 
-                    if let Ok((sched_type, nparams)) = dom.get_scheduler_type() {
+                    if let Ok((sched_type, nparams)) = dom.scheduler_type() {
                         println!("SchedType: {sched_type}, nparams: {nparams}");
                     }
 
-                    if let Ok(sched_info) = dom.get_scheduler_parameters() {
+                    if let Ok(sched_info) = dom.scheduler_parameters() {
                         println!("Schedule Information:");
                         println!("\tScheduler\t: {}", sched_info.scheduler_type);
                         if let Some(shares) = sched_info.cpu_shares {

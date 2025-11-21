@@ -1073,7 +1073,7 @@ impl Domain {
         self.ptr
     }
 
-    pub fn get_connect(&self) -> Result<Connect, Error> {
+    pub fn connect(&self) -> Result<Connect, Error> {
         let ptr = unsafe { sys::virDomainGetConnect(self.as_ptr()) };
         if ptr.is_null() {
             return Err(Error::last_error());
@@ -1090,7 +1090,7 @@ impl Domain {
     ///
     /// Each state can be accompanied with a reason (if known) which
     /// led to the state.
-    pub fn get_state(&self) -> Result<(DomainStateEnum, DomainStateReasonEnum), Error> {
+    pub fn state(&self) -> Result<(DomainStateEnum, DomainStateReasonEnum), Error> {
         let mut state: libc::c_int = -1;
         let mut reason: libc::c_int = -1;
         let ret = unsafe { sys::virDomainGetState(self.as_ptr(), &mut state, &mut reason, 0) };
@@ -1133,7 +1133,7 @@ impl Domain {
     }
 
     /// Get the public name of the domain.
-    pub fn get_name(&self) -> Result<String, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virDomainGetName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -1142,7 +1142,7 @@ impl Domain {
     }
 
     /// Get the type of domain operating system.
-    pub fn get_os_type(&self) -> Result<String, Error> {
+    pub fn os_type(&self) -> Result<String, Error> {
         let n = unsafe { sys::virDomainGetOSType(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -1151,7 +1151,7 @@ impl Domain {
     }
 
     /// Get the hostname for that domain.
-    pub fn get_hostname(&self, flags: u32) -> Result<String, Error> {
+    pub fn hostname(&self, flags: u32) -> Result<String, Error> {
         let n = unsafe { sys::virDomainGetHostname(self.as_ptr(), flags as libc::c_uint) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -1159,7 +1159,7 @@ impl Domain {
         Ok(unsafe { c_chars_to_string!(n) })
     }
 
-    pub fn get_uuid(&self) -> Result<Uuid, Error> {
+    pub fn uuid(&self) -> Result<Uuid, Error> {
         let mut uuid: [libc::c_uchar; sys::VIR_UUID_BUFLEN as usize] =
             [0; sys::VIR_UUID_BUFLEN as usize];
         let ret = unsafe { sys::virDomainGetUUID(self.as_ptr(), uuid.as_mut_ptr()) };
@@ -1172,7 +1172,7 @@ impl Domain {
     /// Get the UUID for a domain as string.
     ///
     /// For more information about UUID see RFC4122.
-    pub fn get_uuid_string(&self) -> Result<String, Error> {
+    pub fn uuid_string(&self) -> Result<String, Error> {
         let mut uuid: [libc::c_char; sys::VIR_UUID_STRING_BUFLEN as usize] =
             [0; sys::VIR_UUID_STRING_BUFLEN as usize];
         let ret = unsafe { sys::virDomainGetUUIDString(self.as_ptr(), uuid.as_mut_ptr()) };
@@ -1183,7 +1183,7 @@ impl Domain {
     }
 
     /// Get the hypervisor ID number for the domain
-    pub fn get_id(&self) -> Option<u32> {
+    pub fn id(&self) -> Option<u32> {
         let ret = unsafe { sys::virDomainGetID(self.as_ptr()) };
         if ret as i32 == -1 {
             return None;
@@ -1195,7 +1195,7 @@ impl Domain {
     /// be reused later to relaunch the domain with [`create_domain_xml()`].
     ///
     /// [`create_domain_xml()`]: Connect::create_domain_xml
-    pub fn get_xml_desc(&self, flags: sys::virDomainXMLFlags) -> Result<String, Error> {
+    pub fn xml_desc(&self, flags: sys::virDomainXMLFlags) -> Result<String, Error> {
         let xml = unsafe { sys::virDomainGetXMLDesc(self.as_ptr(), flags) };
         if xml.is_null() {
             return Err(Error::last_error());
@@ -1230,7 +1230,7 @@ impl Domain {
     /// Extract information about a domain. Note that if the
     /// connection used to get the domain is limited only a partial
     /// set of the information can be extracted.
-    pub fn get_info(&self) -> Result<DomainInfo, Error> {
+    pub fn info(&self) -> Result<DomainInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let res = unsafe { sys::virDomainGetInfo(self.as_ptr(), pinfo.as_mut_ptr()) };
         if res == -1 {
@@ -1439,7 +1439,7 @@ impl Domain {
         Ok(ret == 1)
     }
 
-    pub fn get_autostart(&self) -> Result<bool, Error> {
+    pub fn autostart(&self) -> Result<bool, Error> {
         let mut autostart: libc::c_int = 0;
         let ret = unsafe { sys::virDomainGetAutostart(self.as_ptr(), &mut autostart) };
         if ret == -1 {
@@ -1464,7 +1464,7 @@ impl Domain {
         Ok(ret == 1)
     }
 
-    pub fn get_max_memory(&self) -> Result<u64, Error> {
+    pub fn max_memory(&self) -> Result<u64, Error> {
         let ret = unsafe { sys::virDomainGetMaxMemory(self.as_ptr()) };
         if ret == 0 {
             return Err(Error::last_error());
@@ -1472,7 +1472,7 @@ impl Domain {
         Ok(c_ulong_to_u64(ret))
     }
 
-    pub fn get_max_vcpus(&self) -> Result<u64, Error> {
+    pub fn max_vcpus(&self) -> Result<u64, Error> {
         let ret = unsafe { sys::virDomainGetMaxVcpus(self.as_ptr()) };
         if ret == 0 {
             return Err(Error::last_error());
@@ -1546,7 +1546,7 @@ impl Domain {
         Ok(ret == 1)
     }
 
-    pub fn get_vcpus_flags(&self, flags: sys::virDomainVcpuFlags) -> Result<u32, Error> {
+    pub fn vcpus_flags(&self, flags: sys::virDomainVcpuFlags) -> Result<u32, Error> {
         let ret = unsafe { sys::virDomainGetVcpusFlags(self.as_ptr(), flags as libc::c_uint) };
         if ret == -1 {
             return Err(Error::last_error());
@@ -1568,7 +1568,7 @@ impl Domain {
         Ok(ret as u32)
     }
 
-    pub fn migrate_get_max_speed(&self, flags: u32) -> Result<u64, Error> {
+    pub fn migrate_max_speed(&self, flags: u32) -> Result<u64, Error> {
         let mut bandwidth: libc::c_ulong = 0;
         let ret = unsafe {
             sys::virDomainMigrateGetMaxSpeed(self.as_ptr(), &mut bandwidth, flags as libc::c_uint)
@@ -1593,7 +1593,7 @@ impl Domain {
         Ok(ret as u32)
     }
 
-    pub fn migrate_get_compression_cache(&self, flags: u32) -> Result<u64, Error> {
+    pub fn migrate_compression_cache(&self, flags: u32) -> Result<u64, Error> {
         let mut size: libc::c_ulonglong = 0;
         let ret = unsafe {
             sys::virDomainMigrateGetCompressionCache(
@@ -1637,7 +1637,7 @@ impl Domain {
         Ok(ret as u32)
     }
 
-    pub fn get_time(&self, flags: u32) -> Result<(i64, i32), Error> {
+    pub fn time(&self, flags: u32) -> Result<(i64, i32), Error> {
         let mut seconds: libc::c_longlong = 0;
         let mut nseconds: libc::c_uint = 0;
         let ret = unsafe {
@@ -1654,7 +1654,7 @@ impl Domain {
         Ok((seconds, nseconds as i32))
     }
 
-    pub fn get_block_info(&self, disk: &str, flags: u32) -> Result<BlockInfo, Error> {
+    pub fn block_info(&self, disk: &str, flags: u32) -> Result<BlockInfo, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let disk_buf = CString::new(disk)?;
         let ret = unsafe {
@@ -1671,7 +1671,7 @@ impl Domain {
         Ok(unsafe { BlockInfo::from_ptr(&mut pinfo.assume_init()) })
     }
 
-    pub fn get_block_stats(&self, disk: &str) -> Result<BlockStats, Error> {
+    pub fn block_stats(&self, disk: &str) -> Result<BlockStats, Error> {
         let mut pinfo = mem::MaybeUninit::uninit();
         let disk_buf = CString::new(disk)?;
         let ret = unsafe {
@@ -1921,12 +1921,12 @@ impl Domain {
     /// ## Examples
     /// Retrieve stats for all CPUs:
     ///
-    /// [`domain::get_cpu_stats(-1, 1, 0)`]
+    /// [`domain::cpu_stats(-1, 1, 0)`]
     ///
     /// Retrieve stats for CPU 0 (cgroups v1 only):
     ///
-    /// [`domain::get_cpu_stats(0, 1, 0)`]
-    pub fn get_cpu_stats(
+    /// [`domain::cpu_stats(0, 1, 0)`]
+    pub fn cpu_stats(
         &self,
         start_cpu: i32,
         ncpus: u32,
@@ -1985,7 +1985,7 @@ impl Domain {
 
     /// Get progress statistics about a background job running on this domain.
     /// This method will return an error if the domain isn't active
-    pub fn get_job_stats(&self, flags: sys::virDomainGetJobStatsFlags) -> Result<JobStats, Error> {
+    pub fn job_stats(&self, flags: sys::virDomainGetJobStatsFlags) -> Result<JobStats, Error> {
         let mut r#type: libc::c_int = 0;
 
         // We allow libvirt to allocate the params structure for us. libvirt will populate
@@ -2015,8 +2015,8 @@ impl Domain {
 
     /// Get progress information about a background job running on this domain.
     /// NOTE: Only a subset of the fields in JobStats are populated by this method. If you want to
-    /// populate more fields then you should use [`Self::get_job_stats`].
-    pub fn get_job_info(&self) -> Result<JobStats, Error> {
+    /// populate more fields then you should use [`Self::job_stats`].
+    pub fn job_info(&self) -> Result<JobStats, Error> {
         unsafe {
             let mut job_info = mem::MaybeUninit::uninit();
             let ret = sys::virDomainGetJobInfo(self.as_ptr(), job_info.as_mut_ptr());
@@ -2175,7 +2175,7 @@ impl Domain {
         Ok(ret as u32)
     }
 
-    pub fn get_metadata(&self, kind: i32, uri: Option<&str>, flags: u32) -> Result<String, Error> {
+    pub fn metadata(&self, kind: i32, uri: Option<&str>, flags: u32) -> Result<String, Error> {
         let uri_buf = some_string_to_cstring!(uri);
         let n = unsafe {
             sys::virDomainGetMetadata(
@@ -2207,7 +2207,7 @@ impl Domain {
         Ok(ret as u32)
     }
 
-    pub fn get_memory_parameters(&self, flags: u32) -> Result<MemoryParameters, Error> {
+    pub fn memory_parameters(&self, flags: u32) -> Result<MemoryParameters, Error> {
         let mut nparams: libc::c_int = 0;
         let ret = unsafe {
             sys::virDomainGetMemoryParameters(
@@ -2411,7 +2411,7 @@ impl Domain {
         Ok(())
     }
 
-    pub fn get_numa_parameters(&self, flags: u32) -> Result<NUMAParameters, Error> {
+    pub fn numa_parameters(&self, flags: u32) -> Result<NUMAParameters, Error> {
         let mut nparams: libc::c_int = 0;
         let ret = unsafe {
             sys::virDomainGetNumaParameters(
@@ -2479,7 +2479,7 @@ impl Domain {
     }
 
     /// Get the cpu scheduler type for the domain
-    pub fn get_scheduler_type(&self) -> Result<(String, i32), Error> {
+    pub fn scheduler_type(&self) -> Result<(String, i32), Error> {
         let mut nparams: libc::c_int = -1;
         let sched_type = unsafe { sys::virDomainGetSchedulerType(self.as_ptr(), &mut nparams) };
         if sched_type.is_null() {
@@ -2490,8 +2490,8 @@ impl Domain {
     }
 
     /// Get the scheduler parameters for the domain.
-    pub fn get_scheduler_parameters(&self) -> Result<SchedulerInfo, Error> {
-        let (sched_type, mut nparams) = self.get_scheduler_type()?;
+    pub fn scheduler_parameters(&self) -> Result<SchedulerInfo, Error> {
+        let (sched_type, mut nparams) = self.scheduler_type()?;
         let mut params: Vec<sys::virTypedParameter> = Vec::with_capacity(nparams as usize);
         let ret = unsafe {
             sys::virDomainGetSchedulerParameters(self.as_ptr(), params.as_mut_ptr(), &mut nparams)
@@ -2514,11 +2514,11 @@ impl Domain {
     /// [`VIR_DOMAIN_AFFECT_CURRENT`]: sys::VIR_DOMAIN_AFFECT_CURRENT
     /// [`VIR_DOMAIN_AFFECT_LIVE`]: sys::VIR_DOMAIN_AFFECT_LIVE
     /// [`VIR_DOMAIN_AFFECT_CONFIG`]: sys::VIR_DOMAIN_AFFECT_CONFIG
-    pub fn get_scheduler_parameters_flags(
+    pub fn scheduler_parameters_flags(
         &self,
         flags: sys::virDomainModificationImpact,
     ) -> Result<SchedulerInfo, Error> {
-        let (sched_type, mut nparams) = self.get_scheduler_type()?;
+        let (sched_type, mut nparams) = self.scheduler_type()?;
         let mut params: Vec<sys::virTypedParameter> = Vec::with_capacity(nparams as usize);
         let ret = unsafe {
             sys::virDomainGetSchedulerParametersFlags(
