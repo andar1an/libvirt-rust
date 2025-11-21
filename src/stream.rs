@@ -75,6 +75,9 @@ impl Clone for Stream {
 }
 
 impl Stream {
+    /// Create a new stream object
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamNew>
     pub fn new(conn: &Connect, flags: sys::virStreamFlags) -> Result<Stream, Error> {
         let ptr = check_null!(unsafe { sys::virStreamNew(conn.as_ptr(), flags as libc::c_uint) })?;
         Ok(unsafe { Stream::from_ptr(ptr) })
@@ -104,16 +107,25 @@ impl Stream {
         self.ptr
     }
 
+    /// Complete I/O on the stream
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamFinish>
     pub fn finish(self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virStreamFinish(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Abort I/O on the stream
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamAbort>
     pub fn abort(self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virStreamAbort(self.as_ptr()) })?;
         Ok(())
     }
 
+    /// Send data to the stream
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamSend>
     pub fn send(&self, data: &[u8]) -> Result<isize, Error> {
         let ret = check_neg!(unsafe {
             sys::virStreamSend(
@@ -125,6 +137,9 @@ impl Stream {
         Ok(ret as isize)
     }
 
+    /// Receive data from the stream
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamRecv>
     pub fn recv(&self, buf: &mut [u8]) -> Result<isize, Error> {
         let ret = check_neg!(unsafe {
             sys::virStreamRecv(
@@ -136,6 +151,9 @@ impl Stream {
         Ok(ret as isize)
     }
 
+    /// Add a stream event callback
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamEventAddCallback>
     pub fn event_add_callback<F: 'static + FnMut(&Stream, sys::virStreamEventType)>(
         &mut self,
         events: sys::virStreamEventType,
@@ -155,6 +173,9 @@ impl Stream {
         Ok(())
     }
 
+    /// Update the stream event callback
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamEventUpdateCallback>
     pub fn event_update_callback(&self, events: sys::virStreamEventType) -> Result<(), Error> {
         let _ = check_neg!(unsafe {
             sys::virStreamEventUpdateCallback(self.as_ptr(), events as libc::c_int)
@@ -162,6 +183,9 @@ impl Stream {
         Ok(())
     }
 
+    /// Remove the stream event callback
+    ///
+    /// See <https://libvirt.org/html/libvirt-libvirt-stream.html#virStreamEventRemoveCallback>
     pub fn event_remove_callback(&self) -> Result<(), Error> {
         let _ = check_neg!(unsafe { sys::virStreamEventRemoveCallback(self.as_ptr()) })?;
         Ok(())
