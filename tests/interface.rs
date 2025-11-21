@@ -23,9 +23,9 @@ fn test_create() {
     let c = common::conn();
     let n = common::build_interface(&c, "wipes");
     assert_eq!(Ok(0), n.create(0));
-    assert_eq!(Ok(String::from("libvirt-rs-test-wipes")), n.get_name());
-    assert!(!n.get_mac_string().unwrap_or_default().is_empty());
-    assert!(!n.get_xml_desc(0).unwrap_or_default().is_empty());
+    assert_eq!(Ok(String::from("libvirt-rs-test-wipes")), n.name());
+    assert!(!n.mac_string().unwrap_or_default().is_empty());
+    assert!(!n.xml_desc(0).unwrap_or_default().is_empty());
     common::clean_iface(n);
     common::close(c);
 }

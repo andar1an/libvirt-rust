@@ -78,7 +78,7 @@ impl Interface {
         self.ptr
     }
 
-    pub fn get_connect(&self) -> Result<Connect, Error> {
+    pub fn connect(&self) -> Result<Connect, Error> {
         let ptr = unsafe { sys::virInterfaceGetConnect(self.as_ptr()) };
         if ptr.is_null() {
             return Err(Error::last_error());
@@ -91,7 +91,7 @@ impl Interface {
         Ok(unsafe { Connect::from_ptr(ptr) })
     }
 
-    pub fn get_name(&self) -> Result<String, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         let n = unsafe { sys::virInterfaceGetName(self.as_ptr()) };
         if n.is_null() {
             return Err(Error::last_error());
@@ -99,7 +99,7 @@ impl Interface {
         Ok(unsafe { c_chars_to_string!(n, nofree) })
     }
 
-    pub fn get_mac_string(&self) -> Result<String, Error> {
+    pub fn mac_string(&self) -> Result<String, Error> {
         let mac = unsafe { sys::virInterfaceGetMACString(self.as_ptr()) };
         if mac.is_null() {
             return Err(Error::last_error());
@@ -107,7 +107,7 @@ impl Interface {
         Ok(unsafe { c_chars_to_string!(mac, nofree) })
     }
 
-    pub fn get_xml_desc(&self, flags: sys::virInterfaceXMLFlags) -> Result<String, Error> {
+    pub fn xml_desc(&self, flags: sys::virInterfaceXMLFlags) -> Result<String, Error> {
         let xml = unsafe { sys::virInterfaceGetXMLDesc(self.as_ptr(), flags) };
         if xml.is_null() {
             return Err(Error::last_error());
