@@ -9,7 +9,6 @@ function install_buildenv() {
     dnf install 'dnf-command(config-manager)' -y
     dnf config-manager --set-enabled -y crb
     dnf install -y epel-release
-    dnf install -y epel-next-release
     dnf install -y \
         ca-certificates \
         cargo \
