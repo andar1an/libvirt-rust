@@ -10,7 +10,7 @@ gitlab:
 
 targets:
 
-  alpine-322: x86_64
+  alpine-323: x86_64
 
   alpine-edge:
     jobs:

@@ -7,15 +7,15 @@
 
 # Native build jobs
 
-x86_64-alpine-322:
+x86_64-alpine-323:
   extends: .native_build_job
   needs:
-    - job: x86_64-alpine-322-container
+    - job: x86_64-alpine-323-container
       optional: true
   allow_failure: false
   variables:
-    NAME: alpine-322
-    TARGET_BASE_IMAGE: docker.io/library/alpine:3.22
+    NAME: alpine-323
+    TARGET_BASE_IMAGE: docker.io/library/alpine:3.23
 
 
 x86_64-alpine-edge:
@@ -246,7 +246,7 @@ x86_64-freebsd-13:
   allow_failure:
     exit_codes: 3
   variables:
-    CIRRUS_VM_IMAGE_NAME: freebsd-13-4
+    CIRRUS_VM_IMAGE_NAME: freebsd-13-5
     CIRRUS_VM_IMAGE_SELECTOR: image_family
     CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
     INSTALL_COMMAND: pkg install -y
@@ -261,7 +261,7 @@ x86_64-freebsd-14:
   allow_failure:
     exit_codes: 3
   variables:
-    CIRRUS_VM_IMAGE_NAME: freebsd-14-2
+    CIRRUS_VM_IMAGE_NAME: freebsd-14-3
     CIRRUS_VM_IMAGE_SELECTOR: image_family
     CIRRUS_VM_INSTANCE_TYPE: freebsd_instance
     INSTALL_COMMAND: pkg install -y
